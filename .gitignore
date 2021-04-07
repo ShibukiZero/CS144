@@ -7,3 +7,5 @@ Makefile
 cmake_install.cmake
 CTestTestfile.cmake
 compile_commands.json
+cmake-build-debug
+main.cpp
