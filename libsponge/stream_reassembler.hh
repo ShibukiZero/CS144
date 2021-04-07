@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <map>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
@@ -14,6 +15,10 @@ class StreamReassembler {
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+    size_t _unassembled_bytes;      //!< The number of unassembled bytes
+    uint64_t _tracker;      //!< The flag that tracks index of current substring in stream
+    uint64_t _eof_index;        //!< The flab that records the last index of the stream
+    std::map<int, std::string> _unassembled{};      //!< The substrings to be assembled
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
