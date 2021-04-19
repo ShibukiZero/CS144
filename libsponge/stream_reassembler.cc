@@ -24,7 +24,11 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     }
     // if the substring is the last piece of stream, record the index of it.
     if (eof){
-        _eof_index = index;
+        _eof_index = index + data.length();
+        // very special case
+        if (_eof_index == 0){
+            _output.end_input();
+        }
     }
     // if there are some data that have already written into byte stream, reassembler drops those data.
     const uint64_t start_index = max(_tracker, index);
@@ -55,7 +59,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
             _unassembled_bytes = _unassembled_bytes - 1;
         }
         // if tracker is beyond eof index, it means all data have been received. Set byte stream end_input.
-        if (_tracker == _eof_index + 1){
+        if (_tracker == _eof_index){
             _output.end_input();
         }
     }
