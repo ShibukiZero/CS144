@@ -50,18 +50,23 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
         // for any data that have already written, delete them in buffer.
         for (uint64_t i = start_index; i < end_index; i++){
             if (_unassembled.find(i) != _unassembled.end()){    // if buffer has key i.
-                _unassembled.erase(i);      // delete element i in buffer.
-                _unassembled_bytes = _unassembled_bytes - 1;
+                // delete element i in buffer.
+                _unassembled.erase(i);
                 // number of unassembled bytes minus 1.
+                _unassembled_bytes = _unassembled_bytes - 1;
             }
         }
         // after writing continuous data chunk into byte stream, pop out data in buffer
         // that is continuous to current data and write into byte stream.
         while (_unassembled.find(_tracker) != _unassembled.end()){      // can find key tracker in buffer.
-            _output.write(_unassembled[_tracker]);      // write key tracker into byte stream.
-            _unassembled.erase(_tracker);       // delete data in buffer.
-            _tracker = _tracker + 1;        // update tracker.
-            _unassembled_bytes = _unassembled_bytes - 1;        // update number of unassembled bytes.
+            // write key tracker into byte stream.
+            _output.write(_unassembled[_tracker]);
+            // delete data in buffer.
+            _unassembled.erase(_tracker);
+            // update tracker.
+            _tracker = _tracker + 1;
+            // update number of unassembled bytes.
+            _unassembled_bytes = _unassembled_bytes - 1;
         }
         // if tracker is beyond eof index, it means all data have been received. Set byte stream end_input.
         if (_tracker == _eof_index){
@@ -73,8 +78,10 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     else {
         for (uint64_t i = start_index; i < end_index; i++){
             if (_unassembled.find(i) == _unassembled.end()){        // if can't find key i in buffer.
-                _unassembled[i] = data.substr(i - index, 1);    // insert data into buffer.
-                _unassembled_bytes = _unassembled_bytes + 1;        // update number of unassembled bytes.
+                // insert data into buffer.
+                _unassembled[i] = data.substr(i - index, 1);
+                // update number of unassembled bytes.
+                _unassembled_bytes = _unassembled_bytes + 1;
             }
         }
         return;
