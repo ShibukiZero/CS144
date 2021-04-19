@@ -18,6 +18,7 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity),
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const uint64_t index, const bool eof) {
+    cout << data << endl;
     // if stream has already been reassembled, do nothing.
     if (_output.input_ended()){
         return;
@@ -45,7 +46,6 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
         _output.write(data.substr(start_index - index, end_index - start_index));
         // update the tracker.
         _tracker = end_index;
-//        cout << "tracker updated end: " << _tracker << endl;
         // for any data that have already written, delete them in buffer.
         for (uint64_t i = start_index; i < end_index; i++){
             if (_unassembled.find(i) != _unassembled.end()){
@@ -57,7 +57,6 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
             _output.write(_unassembled[_tracker]);
             _unassembled.erase(_tracker);
             _tracker = _tracker + 1;
-//            cout << "tracker updated: " << _tracker << endl;
             _unassembled_bytes = _unassembled_bytes - 1;
         }
         // if tracker is beyond eof index, it means all data have been received. Set byte stream end_input.
@@ -69,7 +68,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     else {
         for (uint64_t i = start_index; i < end_index; i++){
             if (_unassembled.find(i) == _unassembled.end()){
-                _unassembled[i] = data.substr(i, 1);
+                _unassembled[i] = data.substr(i - index, 1);
                 _unassembled_bytes = _unassembled_bytes + 1;
             }
         }
