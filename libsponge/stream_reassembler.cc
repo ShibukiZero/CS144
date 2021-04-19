@@ -25,7 +25,8 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     // if the substring is the last piece of stream, record the index of it.
     if (eof){
         _eof_index = index + data.length();
-        // very special case
+        // special case, where tracker is already at eof index.
+        // usually, this situation occurs when substring is an empty string.
         if (_eof_index == _tracker){
             _output.end_input();
             return;
@@ -46,19 +47,21 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
         _output.write(data.substr(start_index - index, end_index - start_index));
         // update the tracker.
         _tracker = end_index;
-        cout << _tracker << endl;
         // for any data that have already written, delete them in buffer.
         for (uint64_t i = start_index; i < end_index; i++){
-            if (_unassembled.find(i) != _unassembled.end()){
-                _unassembled.erase(i);
+            if (_unassembled.find(i) != _unassembled.end()){    // if buffer has key i.
+                _unassembled.erase(i);      // delete element i in buffer.
                 _unassembled_bytes = _unassembled_bytes - 1;
+                // number of unassembled bytes minus 1.
             }
         }
-        while (_unassembled.find(_tracker) != _unassembled.end()){
-            _output.write(_unassembled[_tracker]);
-            _unassembled.erase(_tracker);
-            _tracker = _tracker + 1;
-            _unassembled_bytes = _unassembled_bytes - 1;
+        // after writing continuous data chunk into byte stream, pop out data in buffer
+        // that is continuous to current data and write into byte stream.
+        while (_unassembled.find(_tracker) != _unassembled.end()){      // can find key tracker in buffer.
+            _output.write(_unassembled[_tracker]);      // write key tracker into byte stream.
+            _unassembled.erase(_tracker);       // delete data in buffer.
+            _tracker = _tracker + 1;        // update tracker.
+            _unassembled_bytes = _unassembled_bytes - 1;        // update number of unassembled bytes.
         }
         // if tracker is beyond eof index, it means all data have been received. Set byte stream end_input.
         if (_tracker == _eof_index){
@@ -66,12 +69,12 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
         }
         return;
     }
-    // if substring is ahead of current tracker.
+    // if substring is ahead of current tracker, store them in buffer.
     else {
         for (uint64_t i = start_index; i < end_index; i++){
-            if (_unassembled.find(i) == _unassembled.end()){
-                _unassembled[i] = data.substr(i - index, 1);
-                _unassembled_bytes = _unassembled_bytes + 1;
+            if (_unassembled.find(i) == _unassembled.end()){        // if can't find key i in buffer.
+                _unassembled[i] = data.substr(i - index, 1);    // insert data into buffer.
+                _unassembled_bytes = _unassembled_bytes + 1;        // update number of unassembled bytes.
             }
         }
         return;
