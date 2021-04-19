@@ -42,9 +42,10 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     // if substring contains a continuous chunk of stream from tracker, write them into byte stream.
     else if (start_index == _tracker){
         // write data into byte stream.
-        _output.write(data.substr(start_index, end_index - start_index));
+        _output.write(data.substr(start_index - index, end_index - start_index));
         // update the tracker.
         _tracker = end_index;
+//        cout << "tracker updated end: " << _tracker << endl;
         // for any data that have already written, delete them in buffer.
         for (uint64_t i = start_index; i < end_index; i++){
             if (_unassembled.find(i) != _unassembled.end()){
@@ -56,6 +57,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
             _output.write(_unassembled[_tracker]);
             _unassembled.erase(_tracker);
             _tracker = _tracker + 1;
+//            cout << "tracker updated: " << _tracker << endl;
             _unassembled_bytes = _unassembled_bytes - 1;
         }
         // if tracker is beyond eof index, it means all data have been received. Set byte stream end_input.
