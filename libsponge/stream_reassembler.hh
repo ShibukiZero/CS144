@@ -19,7 +19,7 @@ class StreamReassembler {
     uint64_t _tracker;      //!< The flag that tracks the index of the first
                             //!< substring to be pushed but not yet received
     uint64_t _eof_index;        //!< The flab that records the last index of the stream
-    std::map<int, std::string> _unassembled{};      //!< The substrings to be assembled
+    std::map<uint64_t, std::string> _unassembled{};      //!< The substrings to be assembled
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
