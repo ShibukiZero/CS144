@@ -1,5 +1,5 @@
 #include "wrapping_integers.hh"
-#include <iostream>
+
 // Dummy implementation of a 32-bit wrapping integer
 
 // For Lab 2, please replace with a real implementation that passes the
@@ -17,8 +17,6 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
     WrappingInt32 seqno = WrappingInt32(isn.raw_value());
     uint32_t offset = n % (uint64_t(UINT32_MAX) + 1);
     seqno = seqno + offset;
-    bool a = (seqno == WrappingInt32(0));
-    cout << a << endl;
     return seqno;
 }
 
