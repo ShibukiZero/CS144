@@ -1,5 +1,5 @@
 #include "tcp_receiver.hh"
-#include <iostream>
+
 // Dummy implementation of a TCP receiver
 
 // For Lab 2, please replace with a real implementation that passes the
@@ -11,9 +11,10 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 
 void TCPReceiver::segment_received(const TCPSegment &seg) {
-    TCPHeader tcpHeader = seg.header();
-    Buffer payLoad = seg.payload();
-    cout << tcpHeader.seqno << payLoad.size() << endl;
+    TCPHeader header = seg.header();
+    if (header.syn == true && _connected == false){
+        _connected = true;
+    }
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const {
