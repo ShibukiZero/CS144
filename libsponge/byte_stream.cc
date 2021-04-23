@@ -18,9 +18,9 @@ size_t ByteStream::write(const string &data) {
     // The length of data string shouldn't be larger than capacity.
     size_t len = min(remaining_capacity(), data.length());
     if (len) {
-        // push data into buffer.
+        // push data into buffer
         _buffer += data.substr(0, len);
-        // update the number of bytes written into stream.
+        // update the number of bytes written into stream
         _bytes_written += len;
     }
     return len;
@@ -41,7 +41,7 @@ string ByteStream::peek_output(const size_t len) const {
 //! \param[in] len bytes will be removed from the output side of the buffer
 void ByteStream::pop_output(const size_t len) {
     if (!buffer_empty()) {
-        // update number of bytes read by stream.
+        // update number of bytes read by stream
         _bytes_read += min(buffer_size(), len);
         // erase string of size len at head of buffer.
         // length of output should not be longer than buffer size.
@@ -54,9 +54,9 @@ void ByteStream::pop_output(const size_t len) {
 //! \param[in] len bytes will be popped and returned
 //! \returns a string
 std::string ByteStream::read(const size_t len) {
-    // a const string data to receive data popped out by stream.
+    // a const string data to receive data popped out by stream
     const string data = peek_output(min(buffer_size(), len));
-    // delete the corresponding data in buffer.
+    // delete the corresponding data in buffer
     pop_output(min(buffer_size(), len));
     return data;
 }
@@ -73,7 +73,7 @@ size_t ByteStream::buffer_size() const { return _buffer.length(); }
 bool ByteStream::buffer_empty() const { return _buffer.empty(); }
 
 bool ByteStream::eof() const {
-    // if writter has ended inputting and buffer is empty.
+    // if writter has ended inputting and buffer is empty
     return input_ended() && buffer_empty();
 }
 
