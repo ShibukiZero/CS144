@@ -20,9 +20,9 @@ class TCPReceiver {
     //! The maximum number of bytes we'll store.
     size_t _capacity;
 
-    bool _connected;              //!< connection flag
-    uint64_t _first_unassembled;  //!< absolute index for first unassenbled byte
-    WrappingInt32 _isn;
+    bool _connected;                    //!< connection flag
+    uint64_t _first_unassembled;        //!< absolute index for first unassenbled byte
+    WrappingInt32 _isn;                 //!< isn received from first SYN segment
 
   public:
     //! \brief Construct a TCP receiver
@@ -30,7 +30,7 @@ class TCPReceiver {
     //! \param capacity the maximum number of bytes that the receiver will
     //!                 store in its buffers at any give time.
     TCPReceiver(const size_t capacity)
-        : _reassembler(capacity), _capacity(capacity), _connected(false), _to_fin(false) {}
+        : _reassembler(capacity), _capacity(capacity), _connected(false), _first_unassembled(0), _isn(WrappingInt32(0)) {}
 
     //! \name Accessors to provide feedback to the remote TCPSender
     //!@{
