@@ -20,8 +20,8 @@ class TCPReceiver {
     //! The maximum number of bytes we'll store.
     size_t _capacity;
 
-    bool _connected;
-    bool _to_fin;
+    bool _connected;                    //!< connection flag
+    uint64_t _first_unassembled;        //!< absolute index for first unassenbled byte
     WrappingInt32 _isn;
 
   public:
