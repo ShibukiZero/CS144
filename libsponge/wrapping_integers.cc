@@ -38,31 +38,31 @@ uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
     uint64_t abs_seqno;
     // if offset is already larger than checkpoint, which is rare to see,
     // then return offset as absolute sequence number.
-    if (offset >= checkpoint){
+    if (offset >= checkpoint) {
         abs_seqno = offset;
         return abs_seqno;
     }
     // if checkpoint is larger than offset, find the right round trip so that
     // absolute sequence number is closest to checkpoint.
-    else{
+    else {
         // compute quotient and remainder of checkpoint with 2^32
         uint32_t quotient = checkpoint / (1ul << 32);
         uint32_t remainder = checkpoint % (1ul << 32);
         // if offset is larger than remainder and distance between offset and remainder
         // is larger than half the round trip, set absolute sequence number in previous
         // round trip.
-        if (offset > remainder && uint32_t(offset - remainder) > (1ul << 31)){
+        if (offset > remainder && uint32_t(offset - remainder) > (1ul << 31)) {
             abs_seqno = (quotient - 1) * (1ul << 32) + offset;
         }
         // if remainder is larger than offset and distance between offset and remainder
         // is larger than half the round trip, set absolute sequence number in next
         // round trip.
-        else if (remainder > offset && uint32_t(remainder - offset) > (1ul << 31)){
+        else if (remainder > offset && uint32_t(remainder - offset) > (1ul << 31)) {
             abs_seqno = (quotient + 1) * (1ul << 32) + offset;
         }
         // if distance between offset and remainder is less than half the round trip, no
         // matter which one is larger, we set absolute sequence number in current round trip.
-        else{
+        else {
             abs_seqno = quotient * (1ul << 32) + offset;
         }
         return abs_seqno;
