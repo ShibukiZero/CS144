@@ -1,7 +1,7 @@
 Lab 2 Writeup
 =============
 
-My name: [your name here]
+My name: Lin Zihan
 
 My SUNet ID: [your sunetid here]
 

@@ -1,7 +1,7 @@
 Lab 1 Writeup
 =============
 
-My name: Zihan Lin
+My name: Lin Zihan
 
 My SUNet ID: 18308125
 
