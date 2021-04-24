@@ -23,10 +23,11 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     if (_connected){
         bool eof = header.fin;
         uint64_t abs_seqno = unwrap(header.seqno, _isn, _first_unassembled);
-        uint64_t stream_index = max(_first_unassembled, abs_seqno) - 1;
+        uint64_t stream_index = abs_seqno - 1 + header.syn;
         size_t pre_window_size = this->window_size();
         _reassembler.push_substring(seg.payload().copy(), stream_index, eof);
-        _first_unassembled = _first_unassembled + this->window_size() - pre_window_size;
+        _first_unassembled = _first_unassembled + this->window_size() - pre_window_size \
+                            + _reassembler.stream_out().input_ended();
         return;
         }
     // if there is no connection, do nothing.
