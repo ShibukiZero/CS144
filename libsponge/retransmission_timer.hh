@@ -1,8 +1,8 @@
 #ifndef SPONGE_RETRANSMISSION_TIMER_HH
 #define SPONGE_RETRANSMISSION_TIMER_HH
 
-#include <cstddef>
 #include <cstdint>
+#include <cstddef>
 
 //! \brief The timer which goes off if transmission times out.
 
