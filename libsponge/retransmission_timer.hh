@@ -27,9 +27,9 @@ class RetransmissionTimer{
     //! \brief Start the timer
     void start();
 
-    //! \brief Timing, when timeout, returns false,
-    //! else return true
-    bool alarm(const size_t ms_since_last_tick);
+    //! \brief Timing, when timeout, returns true,
+    //! else return false
+    bool timeout(const size_t ms_since_last_tick);
 
     //! \brief If conflict occurs, double the retransmission time
     void backoff();

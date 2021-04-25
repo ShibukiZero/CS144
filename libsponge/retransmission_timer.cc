@@ -13,7 +13,7 @@ void RetransmissionTimer::start() {
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
-bool RetransmissionTimer::alarm(const size_t ms_since_last_tick) {
+bool RetransmissionTimer::timeout(const size_t ms_since_last_tick) {
     _timer = _timer + ms_since_last_tick;
     return (_timer >= _retransmission_timeout);
 }
