@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <queue>
+#include <map>
 
 //! \brief The "sender" part of a TCP implementation.
 
@@ -33,7 +34,22 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
-    //! the number that keep track of how many consecutive retrans happens
+    //! the timer that timing a outstanding segment and expire when retransmission timeout
+    RetransmissionTimer _timer;
+
+    //! the tracker which records the last absolute sequence number of last acknoledged byte
+    uint64_t _last_acknowledged;
+
+    //! current receiver window size
+    size_t _receiver_window_size;
+
+    //! buffer which stores outstanding segments
+    std::map<WrappingInt32, Buffer> _outstanding_segments;
+
+    //! number of bytes that are in flight
+    size_t _bytes_unacknowledged;
+
+    //! the number that keep track of how many consecutive retranmissions happens
     unsigned int _consecutive_retransmissions;
 
   public:

@@ -1,5 +1,7 @@
 #ifndef SPONGE_RETRANSMISSION_TIMER_HH
 #define SPONGE_RETRANSMISSION_TIMER_HH
+
+#include <cstddef>
 #include <cstdint>
 
 //! \brief The timer which goes off if transmission times out.
@@ -22,17 +24,17 @@ class RetransmissionTimer{
     //! \name "Input" interface for the writer
     //!@{
 
-    //! \brief start the timer
+    //! \brief Start the timer
     void start();
 
-    //! \brief timing, when timeout, returns false
+    //! \brief Timing, when timeout, returns false
     //! else return true
     bool alarm(const size_t ms_since_last_tick);
 
-    //! \brief if conflict occurs, double the retransmission time
+    //! \brief If conflict occurs, double the retransmission time
     void backoff();
 
-    //! \brief
+    //! \brief After a success transmission, reset the retransmission time
     void reset();
     //!@}
 };

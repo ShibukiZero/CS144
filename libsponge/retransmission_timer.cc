@@ -1,15 +1,19 @@
 #include "retransmission_timer.hh"
 
+using namespace std;
+
+//! \param[in] initial retransmission timeout of the timer
 RetransmissionTimer::RetransmissionTimer(const uint16_t initial_retransmission_timeout)
     : _initial_retransmission_timeout(initial_retransmission_timeout)
     , _retransmission_timeout(initial_retransmission_timeout)
-    , _timer(0){};
+    , _timer(0) {}
 
 void RetransmissionTimer::start() {
     _timer = 0;
 }
 
-bool RetransmissionTimer::alarm(const std::size_t ms_since_last_tick) {
+//! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
+bool RetransmissionTimer::alarm(const size_t ms_since_last_tick) {
     _timer = _timer + ms_since_last_tick;
     return (_timer >= _retransmission_timeout);
 }
