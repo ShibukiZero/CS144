@@ -9,15 +9,15 @@ void RetransmissionTimer::start() {
     _timer = 0;
 }
 
-bool RetransmissionTimer::alart(const std::size_t ms_since_last_tick) {
+bool RetransmissionTimer::alarm(const std::size_t ms_since_last_tick) {
     _timer = _timer + ms_since_last_tick;
     return (_timer >= _retransmission_timeout);
 }
 
-void RetransmissionTimer::double_RTO() {
+void RetransmissionTimer::backoff() {
     _retransmission_timeout = 2 * _retransmission_timeout;
 }
 
-void RetransmissionTimer::reset_RTO() {
+void RetransmissionTimer::reset() {
     _retransmission_timeout = _initial_retransmission_timeout;
 }

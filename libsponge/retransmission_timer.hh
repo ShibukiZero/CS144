@@ -6,20 +6,35 @@
 
 class RetransmissionTimer{
   private:
+    //! initial retruansmission timeout
     unsigned int _initial_retransmission_timeout;
+
+    //! current retransmission timeout
     unsigned int _retransmission_timeout;
+
+    //! timer records how much millisecond has elapsed after start time
     unsigned int _timer;
 
   public:
+    //! Initialize a timer
     RetransmissionTimer(const uint16_t initial_retransmission_timeout);
 
+    //! \name "Input" interface for the writer
+    //!@{
+
+    //! \brief start the timer
     void start();
 
-    bool alart(const size_t ms_since_last_tick);
+    //! \brief timing, when timeout, returns false
+    //! else return true
+    bool alarm(const size_t ms_since_last_tick);
 
-    void double_RTO();
+    //! \brief if conflict occurs, double the retransmission time
+    void backoff();
 
-    void reset_RTO();
+    //! \brief
+    void reset();
+    //!@}
 };
 
 #endif //SPONGE_RETRANSMISSION_TIMER_HH
