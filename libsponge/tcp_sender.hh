@@ -5,6 +5,7 @@
 #include "tcp_config.hh"
 #include "tcp_segment.hh"
 #include "wrapping_integers.hh"
+#include "retransmission_timer.hh"
 
 #include <functional>
 #include <queue>
@@ -31,6 +32,9 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    //! the number that keep track of how many consecutive retrans happens
+    unsigned int _consecutive_retransmissions;
 
   public:
     //! Initialize a TCPSender
