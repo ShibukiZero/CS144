@@ -49,18 +49,24 @@ void TCPSender::fill_window() {
     _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
     _timer.start();
     _segments_out.push(segment);
-
+    return;
 }
 
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
+    // get the absolute sequence number of ack and reset the timer.
     uint64_t ack_abs_seqno = unwrap(ackno, _isn, _next_seqno);
     _timer.reset();
+    // update window size and next sequence number, if window size is 0, set it to 1
+    // otherwise TCP sender don't know when to send segment.
     _receiver_window_size = (window_size == 0) + window_size;
     _next_seqno = ack_abs_seqno;
+    // update number of bytes unacknowledged by computing how many bytes have been acknowledged.
     uint64_t offset = ackno - _outstanding_segments.header().seqno;
     _bytes_unacknowledged = _bytes_unacknowledged - offset;
+    // if the last byte of segment are all acknowledged, fill the window and send new segment,
+    // else, resend the segment and start timer.
     if (_bytes_unacknowledged == 0){
         fill_window();
     }
@@ -68,20 +74,24 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         _segments_out.push(_outstanding_segments);
         _timer.start();
     }
+    return;
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) {
+    // if retransmission times out, resend the segment and exponential backoff the timer.
     if(_timer.timeout(ms_since_last_tick)){
         _segments_out.push(_outstanding_segments);
         _timer.backoff();
         _timer.start();
     }
+    return;
 }
 
 unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions; }
 
 void TCPSender::send_empty_segment() {
+    // create a empty segment and push it into queue.
     TCPSegment empty_segment = TCPSegment();
     _segments_out.push(empty_segment);
     return;
