@@ -40,15 +40,12 @@ class TCPSender {
     //! the timer that timing a outstanding segment and expire when retransmission timeout
     RetransmissionTimer _timer;
 
-    //! the tracker which records the last absolute sequence number of last acknoledged byte
-    uint64_t _last_acknowledged;
-
     //! current receiver window size
     size_t _receiver_window_size;
 
     //! buffer which stores outstanding segments, key is the last absolute sequence number
     //! of TCP segment, value is TCP segment itself
-    std::map<uint64_t, TCPSegment> _outstanding_segments;
+    TCPSegment _outstanding_segments;
 
     //! number of bytes that are in flight
     uint64_t _bytes_unacknowledged;

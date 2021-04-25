@@ -22,7 +22,6 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     , _stream(capacity)
     , _connected(false)
     , _timer(_initial_retransmission_timeout)
-    , _last_acknowledged(0)
     , _receiver_window_size(1)
     , _outstanding_segments()
     , _bytes_unacknowledged(0)
@@ -44,9 +43,9 @@ void TCPSender::fill_window() {
     // if stream input is ended and window size is not full, set FIN flag to true.
     segment.header().fin = _stream.input_ended() && \
             segment.length_in_sequence_space() < _receiver_window_size - segment.header().syn;
-    // store the segment, update number of bytes unacknowledged, start the timer and push segment
-    // into queue.
-    _outstanding_segments[_next_seqno + segment.length_in_sequence_space()] = segment;
+    // store the segment, update number of bytes unacknowledged,
+    // start the timer and push segment into queue.
+    _outstanding_segments = segment;
     _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
     _timer.start();
     _segments_out.push(segment);
@@ -56,7 +55,13 @@ void TCPSender::fill_window() {
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
-
+    uint64_t ack_abs_seqno = unwrap(ackno, _isn, _next_seqno);
+    uint64_t last_abs_seqno = unwrap(_outstanding_segments.header().seqno, _isn, _next_seqno);
+    if (ack_abs_seqno > last_abs_seqno){
+        _receiver_window_size = window_size;
+        _next_seqno = ack_abs_seqno;
+        _timer.reset()
+    }
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
