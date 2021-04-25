@@ -4,8 +4,6 @@
 
 //! \brief The timer which goes off if transmission times out.
 
-//!
-
 class RetransmissionTimer{
   private:
     unsigned int _initial_retransmission_timeout;
