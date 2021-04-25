@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <cstddef>
-//
+
 //! \brief The timer which goes off if transmission times out.
 
 class RetransmissionTimer{

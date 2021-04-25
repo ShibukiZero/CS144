@@ -1,5 +1,5 @@
 #include "retransmission_timer.hh"
-//
+
 using namespace std;
 
 //! \param[in] initial retransmission timeout of the timer
