@@ -56,16 +56,26 @@ void TCPSender::fill_window() {
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
     uint64_t ack_abs_seqno = unwrap(ackno, _isn, _next_seqno);
-    uint64_t last_abs_seqno = unwrap(_outstanding_segments.header().seqno, _isn, _next_seqno);
-    if (ack_abs_seqno > last_abs_seqno){
-        _receiver_window_size = window_size;
-        _next_seqno = ack_abs_seqno;
-        _timer.reset()
+    _timer.reset();
+    _receiver_window_size = (window_size == 0) + window_size;
+    _next_seqno = ack_abs_seqno;
+    uint64_t offset = ackno - _outstanding_segments.header().seqno;
+    _bytes_unacknowledged = _bytes_unacknowledged - offset;
+    if (_bytes_unacknowledged == 0){
+        fill_window();
+    }
+    else{
+        _segments_out.push(_outstanding_segments);
+        _timer.start();
     }
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
-void TCPSender::tick(const size_t ms_since_last_tick) { DUMMY_CODE(ms_since_last_tick); }
+void TCPSender::tick(const size_t ms_since_last_tick) {
+    if(!_timer.alarm(ms_since_last_tick)){
+
+    }
+}
 
 unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions; }
 

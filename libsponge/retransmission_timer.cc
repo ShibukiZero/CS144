@@ -24,5 +24,4 @@ void RetransmissionTimer::backoff() {
 
 void RetransmissionTimer::reset() {
     _retransmission_timeout = _initial_retransmission_timeout;
-    _timer = 0;
 }
