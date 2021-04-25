@@ -34,6 +34,9 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
+    //! the flag indicating whether connection is set or not
+    bool _connected;
+
     //! the timer that timing a outstanding segment and expire when retransmission timeout
     RetransmissionTimer _timer;
 
@@ -43,11 +46,12 @@ class TCPSender {
     //! current receiver window size
     size_t _receiver_window_size;
 
-    //! buffer which stores outstanding segments
-    std::map<WrappingInt32, Buffer> _outstanding_segments;
+    //! buffer which stores outstanding segments, key is the last absolute sequence number
+    //! of TCP segment, value is TCP segment itself
+    std::map<uint64_t, TCPSegment> _outstanding_segments;
 
     //! number of bytes that are in flight
-    size_t _bytes_unacknowledged;
+    uint64_t _bytes_unacknowledged;
 
     //! the number that keep track of how many consecutive retranmissions happens
     unsigned int _consecutive_retransmissions;
