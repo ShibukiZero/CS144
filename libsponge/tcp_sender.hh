@@ -37,6 +37,9 @@ class TCPSender {
     //! the flag indicating whether connection is set or not
     bool _connected;
 
+    //! the flag indicating whether ack is correct
+    bool _ack_correct;
+
     //! the timer that timing a outstanding segment and expire when retransmission timeout
     RetransmissionTimer _timer;
 
