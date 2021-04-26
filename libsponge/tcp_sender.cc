@@ -25,7 +25,7 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     , _fin_sent(false)
     , _ack_correct(true)
     , _timer(_initial_retransmission_timeout)
-    , _receiver_window_size(1)
+    , _receiver_window_size(SIZE_MAX)
     , _outstanding_segments()
     , _bytes_unacknowledged(0)
     , _consecutive_retransmissions(0){}
@@ -41,7 +41,8 @@ void TCPSender::fill_window() {
     if (segment.header().syn){
         _syn_sent = true;
     }
-    size_t payload_size = min((_receiver_window_size == 0) + _receiver_window_size - _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
+    size_t payload_size = (!segment.header().syn) * min((_receiver_window_size == 0) + _receiver_window_size - \
+                _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
     segment.payload() = _stream.read(payload_size);
     segment.header().seqno = wrap(_next_seqno, _isn);
     segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent\
