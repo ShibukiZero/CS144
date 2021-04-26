@@ -33,32 +33,35 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
 uint64_t TCPSender::bytes_in_flight() const { return _bytes_unacknowledged; }
 
 void TCPSender::fill_window() {
-    if (!_ack_correct){
-        return;
-    }
-    TCPSegment segment = TCPSegment();
-    segment.header().syn = (!_connected && !_syn_sent);
-    if (segment.header().syn){
-        _syn_sent = true;
-    }
-    size_t payload_size = (!segment.header().syn) * min((_receiver_window_size == 0) + _receiver_window_size - \
+    while (_bytes_unacknowledged <= _receiver_window_size){
+        if (!_ack_correct){
+            return;
+        }
+        TCPSegment segment = TCPSegment();
+        segment.header().syn = (!_connected && !_syn_sent);
+        if (segment.header().syn){
+            _syn_sent = true;
+        }
+        size_t payload_size = (!segment.header().syn && _connected) * min((_receiver_window_size == 0) + _receiver_window_size - \
                 _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
-    segment.payload() = _stream.read(payload_size);
-    segment.header().seqno = wrap(_next_seqno, _isn);
-    segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent\
-        && segment.length_in_sequence_space() < _receiver_window_size - _bytes_unacknowledged - segment.header().syn;
-    if (segment.header().fin){
-        _fin_sent = true;
-    }
-    if (segment.length_in_sequence_space() == 0){
-        return;
-    }
-    _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
-    _next_seqno = _next_seqno + segment.length_in_sequence_space();
-    _outstanding_segments[_next_seqno] = segment;
-    _segments_out.push(segment);
-    if (!_timer.timing()){
-        _timer.start();
+        segment.payload() = _stream.read(payload_size);
+        segment.header().seqno = wrap(_next_seqno, _isn);
+        segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent &&_connected\
+        && segment.length_in_sequence_space() < _receiver_window_size + (_receiver_window_size == 0)\
+        - _bytes_unacknowledged - segment.header().syn;
+        if (segment.header().fin){
+            _fin_sent = true;
+        }
+        if (segment.length_in_sequence_space() == 0){
+            return;
+        }
+        _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
+        _next_seqno = _next_seqno + segment.length_in_sequence_space();
+        _outstanding_segments[_next_seqno] = segment;
+        _segments_out.push(segment);
+        if (!_timer.timing()){
+            _timer.start();
+        }
     }
     return;
 }
@@ -83,6 +86,10 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         size_t previous_bytes_unacknowledged = _bytes_unacknowledged;
         _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
         _receiver_window_size = window_size;
+        if (_outstanding_segments[_next_seqno].length_in_sequence_space() > window_size){
+            _outstanding_segments[_next_seqno].header().fin = false;
+            _fin_sent = false;
+        }
         if (previous_bytes_unacknowledged - _bytes_unacknowledged > 0){
             _timer.reset();
             _consecutive_retransmissions = 0;
