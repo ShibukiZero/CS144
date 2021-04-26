@@ -1,6 +1,6 @@
 #ifndef SPONGE_LIBSPONGE_TCP_SENDER_HH
 #define SPONGE_LIBSPONGE_TCP_SENDER_HH
-//
+
 #include "byte_stream.hh"
 #include "tcp_config.hh"
 #include "tcp_segment.hh"
