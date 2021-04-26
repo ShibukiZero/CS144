@@ -33,15 +33,23 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
 uint64_t TCPSender::bytes_in_flight() const { return _bytes_unacknowledged; }
 
 void TCPSender::fill_window() {
+    // when there is space available in the window, transmit as much data as possible.
     while (_bytes_unacknowledged <= _receiver_window_size){
+        // if there is any invalid ack happens, do nothing.
         if (!_ack_correct){
             return;
         }
         TCPSegment segment = TCPSegment();
+        // if connection is not established and TCP sender never send an SYN segment,
+        // set SYN flag and set _syn_sent flag to true.
         segment.header().syn = (!_connected && !_syn_sent);
         if (segment.header().syn){
             _syn_sent = true;
         }
+        // if connection is not established or this is an SYN segment, TCP sender shouldn't
+        // send any data in payload. else, calculate space available in window and read data
+        // from stream.
+        // Note: payload size should not be larger than MAX_PAYLOAD_SIZE
         size_t payload_size = (!segment.header().syn && _connected) * min((_receiver_window_size == 0) + _receiver_window_size - \
                 _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
         segment.payload() = _stream.read(payload_size);
