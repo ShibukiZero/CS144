@@ -41,7 +41,7 @@ void TCPSender::fill_window() {
     if (segment.header().syn){
         _syn_sent = true;
     }
-    size_t payload_size = min(_receiver_window_size - _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
+    size_t payload_size = min((_receiver_window_size == 0) + _receiver_window_size - _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
     segment.payload() = _stream.read(payload_size);
     segment.header().seqno = wrap(_next_seqno, _isn);
     segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent\
@@ -78,7 +78,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         }
         _ack_correct = true;
         _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
-        _receiver_window_size = (window_size == 0) + window_size;
+        _receiver_window_size = window_size;
     }
     else{
         _ack_correct = false;
@@ -90,6 +90,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 void TCPSender::tick(const size_t ms_since_last_tick) {
     if(_timer.timeout(ms_since_last_tick)){
         _segments_out.push(_outstanding_segments.upper_bound(_next_seqno - _bytes_unacknowledged)->second);
+        _consecutive_retransmissions = _consecutive_retransmissions + 1;
         _timer.backoff();
         _timer.start();
     }

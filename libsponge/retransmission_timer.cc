@@ -6,10 +6,12 @@ using namespace std;
 RetransmissionTimer::RetransmissionTimer(const uint16_t initial_retransmission_timeout)
     : _initial_retransmission_timeout(initial_retransmission_timeout)
     , _retransmission_timeout(initial_retransmission_timeout)
-    , _timer(0) {}
+    , _timer(0)
+    , _timing(false) {}
 
 void RetransmissionTimer::start() {
     _timer = 0;
+    _timing = true;
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
@@ -24,4 +26,12 @@ void RetransmissionTimer::backoff() {
 
 void RetransmissionTimer::reset() {
     _retransmission_timeout = _initial_retransmission_timeout;
+}
+
+void RetransmissionTimer::stop() {
+    _timing = false;
+}
+
+bool RetransmissionTimer::timing() const {
+    return _timing;
 }
