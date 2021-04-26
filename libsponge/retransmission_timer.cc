@@ -20,18 +20,10 @@ bool RetransmissionTimer::timeout(const size_t ms_since_last_tick) {
     return (_timer >= _retransmission_timeout);
 }
 
-void RetransmissionTimer::backoff() {
-    _retransmission_timeout = 2 * _retransmission_timeout;
-}
+void RetransmissionTimer::backoff() { _retransmission_timeout = 2 * _retransmission_timeout; }
 
-void RetransmissionTimer::reset() {
-    _retransmission_timeout = _initial_retransmission_timeout;
-}
+void RetransmissionTimer::reset() { _retransmission_timeout = _initial_retransmission_timeout; }
 
-void RetransmissionTimer::stop() {
-    _timing = false;
-}
+void RetransmissionTimer::stop() { _timing = false; }
 
-bool RetransmissionTimer::timing() const {
-    return _timing;
-}
+bool RetransmissionTimer::timing() const { return _timing; }

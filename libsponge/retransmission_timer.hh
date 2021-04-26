@@ -1,12 +1,12 @@
 #ifndef SPONGE_RETRANSMISSION_TIMER_HH
 #define SPONGE_RETRANSMISSION_TIMER_HH
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 //! \brief The timer which goes off if transmission times out.
 
-class RetransmissionTimer{
+class RetransmissionTimer {
   private:
     //! initial retruansmission timeout
     unsigned int _initial_retransmission_timeout;
@@ -48,4 +48,4 @@ class RetransmissionTimer{
     //!@}
 };
 
-#endif //SPONGE_RETRANSMISSION_TIMER_HH
+#endif  // SPONGE_RETRANSMISSION_TIMER_HH
