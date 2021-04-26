@@ -57,7 +57,7 @@ class TCPSender {
     std::map<uint64_t, TCPSegment> _outstanding_segments;
 
     //! number of bytes that are in flight
-    uint64_t _bytes_unacknowledged;
+    size_t _bytes_unacknowledged;
 
     //! the number that keep track of how many consecutive retranmissions happens
     unsigned int _consecutive_retransmissions;

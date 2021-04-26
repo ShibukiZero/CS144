@@ -56,6 +56,9 @@ void TCPSender::fill_window() {
     _next_seqno = _next_seqno + segment.length_in_sequence_space();
     _outstanding_segments[_next_seqno] = segment;
     _segments_out.push(segment);
+    if (!_timer.timing()){
+        _timer.start();
+    }
     return;
 }
 
@@ -77,8 +80,19 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             }
         }
         _ack_correct = true;
+        size_t previous_bytes_unacknowledged = _bytes_unacknowledged;
         _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
         _receiver_window_size = window_size;
+        if (previous_bytes_unacknowledged - _bytes_unacknowledged > 0){
+            _timer.reset();
+            _consecutive_retransmissions = 0;
+            if (_bytes_unacknowledged == 0){
+                _timer.stop();
+            }
+            else{
+                _timer.start();
+            }
+        }
     }
     else{
         _ack_correct = false;
@@ -90,8 +104,10 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 void TCPSender::tick(const size_t ms_since_last_tick) {
     if(_timer.timeout(ms_since_last_tick)){
         _segments_out.push(_outstanding_segments.upper_bound(_next_seqno - _bytes_unacknowledged)->second);
-        _consecutive_retransmissions = _consecutive_retransmissions + 1;
-        _timer.backoff();
+        if (_receiver_window_size != 0){
+            _consecutive_retransmissions = _consecutive_retransmissions + 1;
+            _timer.backoff();
+        }
         _timer.start();
     }
     return;
