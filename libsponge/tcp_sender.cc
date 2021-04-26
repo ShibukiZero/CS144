@@ -70,35 +70,40 @@ void TCPSender::fill_window() {
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
     uint64_t ackno_abs_seqno = unwrap(ackno, _isn, _next_seqno);
-    if (ackno_abs_seqno >= !_connected + _next_seqno - _bytes_unacknowledged && ackno_abs_seqno <= _next_seqno){
-        if (ackno_abs_seqno == 1){
-            _connected = true;
+    if (ackno_abs_seqno >= 1 && ackno_abs_seqno <= _next_seqno){
+        if (ackno_abs_seqno >= !_connected + _next_seqno - _bytes_unacknowledged){
+            if (ackno_abs_seqno == 1){
+                _connected = true;
+            }
+            for (auto ite = _outstanding_segments.begin(); ite != _outstanding_segments.end();){
+                if (ackno_abs_seqno >= ite->first){
+                    _outstanding_segments.erase(ite++);
+                }
+                else{
+                    ite++;
+                }
+            }
+            _ack_correct = true;
+            size_t previous_bytes_unacknowledged = _bytes_unacknowledged;
+            _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
+            _receiver_window_size = window_size;
+            if (!_outstanding_segments.empty() && _outstanding_segments[_next_seqno].length_in_sequence_space() > window_size){
+                _outstanding_segments[_next_seqno].header().fin = false;
+                _fin_sent = false;
+            }
+            if (previous_bytes_unacknowledged - _bytes_unacknowledged > 0){
+                _timer.reset();
+                _consecutive_retransmissions = 0;
+                if (_bytes_unacknowledged == 0){
+                    _timer.stop();
+                }
+                else{
+                    _timer.start();
+                }
+            }
         }
-        for (auto ite = _outstanding_segments.begin(); ite != _outstanding_segments.end();){
-            if (ackno_abs_seqno >= ite->first){
-                _outstanding_segments.erase(ite++);
-            }
-            else{
-                ite++;
-            }
-        }
-        _ack_correct = true;
-        size_t previous_bytes_unacknowledged = _bytes_unacknowledged;
-        _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
-        _receiver_window_size = window_size;
-        if (_outstanding_segments[_next_seqno].length_in_sequence_space() > window_size){
-            _outstanding_segments[_next_seqno].header().fin = false;
-            _fin_sent = false;
-        }
-        if (previous_bytes_unacknowledged - _bytes_unacknowledged > 0){
-            _timer.reset();
-            _consecutive_retransmissions = 0;
-            if (_bytes_unacknowledged == 0){
-                _timer.stop();
-            }
-            else{
-                _timer.start();
-            }
+        else{
+            return;
         }
     }
     else{
@@ -110,6 +115,9 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) {
     if(_timer.timeout(ms_since_last_tick)){
+        if (_outstanding_segments.empty()){
+            return;
+        }
         _segments_out.push(_outstanding_segments.upper_bound(_next_seqno - _bytes_unacknowledged)->second);
         if (_receiver_window_size != 0){
             _consecutive_retransmissions = _consecutive_retransmissions + 1;
