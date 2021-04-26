@@ -21,6 +21,9 @@ class TCPConnection {
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
 
+    //! timer to track milliseconds from last segment received
+    size_t _timer{0};
+
   public:
     //! \name "Input" interface for the writer
     //!@{
