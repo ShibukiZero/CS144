@@ -37,7 +37,7 @@ void TCPSender::fill_window() {
         return;
     }
     TCPSegment segment = TCPSegment();
-    segment.header().syn = !_connected;
+    segment.header().syn = (!_connected && !_syn_sent);
     if (segment.header().syn){
         _syn_sent = true;
     }
@@ -66,10 +66,9 @@ void TCPSender::fill_window() {
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
     uint64_t ackno_abs_seqno = unwrap(ackno, _isn, _next_seqno);
-    if (ackno_abs_seqno >= _syn_sent + _next_seqno - _bytes_unacknowledged && ackno_abs_seqno <= _next_seqno){
+    if (ackno_abs_seqno >= !_connected + _next_seqno - _bytes_unacknowledged && ackno_abs_seqno <= _next_seqno){
         if (ackno_abs_seqno == 1){
             _connected = true;
-            _syn_sent = false;
         }
         for (auto ite = _outstanding_segments.begin(); ite != _outstanding_segments.end();){
             if (ackno_abs_seqno >= ite->first){
