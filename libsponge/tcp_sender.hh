@@ -48,7 +48,7 @@ class TCPSender {
 
     //! buffer which stores outstanding segments, key is the last absolute sequence number
     //! of TCP segment, value is TCP segment itself
-    TCPSegment _outstanding_segments;
+    std::map<uint64_t, TCPSegment> _outstanding_segments;
 
     //! number of bytes that are in flight
     uint64_t _bytes_unacknowledged;

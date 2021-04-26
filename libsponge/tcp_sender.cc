@@ -24,7 +24,7 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     , _ack_correct(true)
     , _timer(_initial_retransmission_timeout)
     , _receiver_window_size(1)
-    , _outstanding_segments(TCPSegment())
+    , _outstanding_segments()
     , _bytes_unacknowledged(0)
     , _consecutive_retransmissions(0){}
 
@@ -48,25 +48,25 @@ void TCPSender::fill_window() {
         segment.payload() = _stream.read(payload_size);
         // set sequence number of segment
         segment.header().seqno = wrap(_next_seqno, _isn);
-        // if stream is empty and input is ended, meanwhile fin has not acked and
+        // if stream is empty and input is ended, meanwhile fin has not been acked and
         // window size is not full, set FIN flag to true.
         segment.header().fin = _stream.buffer_empty() && _stream.input_ended() \
-        && _outstanding_segments.header().fin == 0 \
+        && _receiver_window_size != 0 \
         && segment.length_in_sequence_space() < _receiver_window_size - segment.header().syn;
         // if segment don't contain any data, just don't send it and don't store it.
         if (segment.length_in_sequence_space() == 0){
             return;
         }
-        // store the segment, update number of bytes unacknowledged,
+        // store the segment with key of last absolute seqno, update number of bytes unacknowledged,
         // start the timer and push segment into queue.
-        _outstanding_segments = segment;
         _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
         _next_seqno = _next_seqno + _bytes_unacknowledged;
+        _outstanding_segments[_next_seqno] = segment;
         _timer.start();
         _segments_out.push(segment);
     }
     else{
-        _segments_out.push(_outstanding_segments);
+        _segments_out.push(_outstanding_segments.upper_bound(_next_seqno - _bytes_unacknowledged)->second);
         _timer.start();
     }
     return;
@@ -78,21 +78,31 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     // receiving an ack means connection established, reset the timer.
     _connected = true;
     _timer.reset();
-    // update window size, if window size is 0, set it to 1
-    // otherwise TCP sender don't know when to send segment.
-    _receiver_window_size = (window_size == 0) + window_size;
     // absolute sequence number of acknowledgement
     uint64_t ackno_abs_seqno = unwrap(ackno, _isn, _next_seqno);
-    // absolute sequence number of outstanding segment
-    uint64_t outstanding_abs_seqno = unwrap(_outstanding_segments.header().seqno, _isn, _next_seqno);
-    // received acknowledgement sequence number shouldn't be smaller than sequence number
+    // remove outstanding segment that is fully acked(ackno is larger than last seqno of segment).
+    for (auto ite = _outstanding_segments.begin(); ite != _outstanding_segments.end();){
+        if (ackno_abs_seqno >= ite->first){
+            _outstanding_segments.erase(ite++);
+        }
+        else{
+            ite++;
+        }
+    }
+    // received acknowledgement sequence number should be larger than sequence number
     // of outstanding segment, nor larger than any byte not yet transmitted, or strange thing happens.
-    if (ackno_abs_seqno > outstanding_abs_seqno && ackno_abs_seqno \
-        <= outstanding_abs_seqno + _outstanding_segments.length_in_sequence_space()){
+    if (ackno_abs_seqno > _next_seqno - _bytes_unacknowledged && ackno_abs_seqno <= _next_seqno){
         // update number of bytes unacknowledged by computing how many bytes have been acknowledged.
-        uint64_t offset = ackno - _outstanding_segments.header().seqno;
-        _bytes_unacknowledged = _bytes_unacknowledged - offset;
-        _ack_correct = true;
+        _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
+        // update window size, if window size is 0, set it to 1 otherwise TCP sender
+        // don't know when to send segment. If FIN flag is acked, set window size to 0.
+        if (_stream.buffer_empty() && _stream.input_ended() && _bytes_unacknowledged == 0){
+            _receiver_window_size = 0;
+        }
+        else {
+            _receiver_window_size = (window_size == 0) + window_size;
+            _ack_correct = true;
+        }
     }
     else{
         _ack_correct = false;
@@ -104,7 +114,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 void TCPSender::tick(const size_t ms_since_last_tick) {
     // if retransmission times out, resend the segment and exponential backoff the timer.
     if(_timer.timeout(ms_since_last_tick)){
-        _segments_out.push(_outstanding_segments);
+        _segments_out.push(_outstanding_segments.upper_bound(_next_seqno - _bytes_unacknowledged)->second);
         _timer.backoff();
         _timer.start();
     }
