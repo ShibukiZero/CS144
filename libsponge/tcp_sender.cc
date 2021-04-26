@@ -36,7 +36,7 @@ void TCPSender::fill_window() {
     }
     TCPSegment segment = TCPSegment();
     segment.header().syn = !_connected;
-    size_t payload_size = min(_receiver_window_size - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
+    size_t payload_size = min(_receiver_window_size - _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
     segment.payload() = _stream.read(payload_size);
     segment.header().seqno = wrap(_next_seqno, _isn);
     segment.header().fin = _stream.buffer_empty() && _stream.input_ended() \
