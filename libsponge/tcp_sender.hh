@@ -34,8 +34,14 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
-    //! the flag indicating whether connection is set or not
+    //! the flag indicating whether connection is established
     bool _connected;
+
+    //! the flag indicating whether a SYN segment is sent
+    bool _syn_sent;
+
+    //! the flag indicating whether a FIN segment is sent
+    bool _fin_sent;
 
     //! the flag indicating whether ack is correct
     bool _ack_correct;

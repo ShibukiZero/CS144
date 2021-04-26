@@ -20,7 +20,9 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     : _isn(fixed_isn.value_or(WrappingInt32{random_device()()}))
     , _initial_retransmission_timeout(retx_timeout)
     , _stream(capacity)
-    , _connected(false)
+    , _connected(0)
+    , _syn_sent(false)
+    , _fin_sent(false)
     , _ack_correct(true)
     , _timer(_initial_retransmission_timeout)
     , _receiver_window_size(1)
@@ -36,19 +38,23 @@ void TCPSender::fill_window() {
     }
     TCPSegment segment = TCPSegment();
     segment.header().syn = !_connected;
+    if (segment.header().syn){
+        _syn_sent = true;
+    }
     size_t payload_size = min(_receiver_window_size - _bytes_unacknowledged - segment.header().syn, TCPConfig::MAX_PAYLOAD_SIZE);
     segment.payload() = _stream.read(payload_size);
     segment.header().seqno = wrap(_next_seqno, _isn);
-    segment.header().fin = _stream.buffer_empty() && _stream.input_ended() \
-        && _receiver_window_size != 0 \
-        && segment.length_in_sequence_space() < _receiver_window_size - segment.header().syn;
+    segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent\
+        && segment.length_in_sequence_space() < _receiver_window_size - _bytes_unacknowledged - segment.header().syn;
+    if (segment.header().fin){
+        _fin_sent = true;
+    }
     if (segment.length_in_sequence_space() == 0){
         return;
     }
     _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
     _next_seqno = _next_seqno + segment.length_in_sequence_space();
     _outstanding_segments[_next_seqno] = segment;
-    _timer.start();
     _segments_out.push(segment);
     return;
 }
@@ -56,27 +62,23 @@ void TCPSender::fill_window() {
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
-    _connected = true;
-    _timer.reset();
     uint64_t ackno_abs_seqno = unwrap(ackno, _isn, _next_seqno);
-    for (auto ite = _outstanding_segments.begin(); ite != _outstanding_segments.end();){
-        if (ackno_abs_seqno >= ite->first){
-            _outstanding_segments.erase(ite++);
+    if (ackno_abs_seqno >= _syn_sent + _next_seqno - _bytes_unacknowledged && ackno_abs_seqno <= _next_seqno){
+        if (ackno_abs_seqno == 1){
+            _connected = true;
+            _syn_sent = false;
         }
-        else{
-            ite++;
+        for (auto ite = _outstanding_segments.begin(); ite != _outstanding_segments.end();){
+            if (ackno_abs_seqno >= ite->first){
+                _outstanding_segments.erase(ite++);
+            }
+            else{
+                ite++;
+            }
         }
-    }
-    if (ackno_abs_seqno > _next_seqno - _bytes_unacknowledged && ackno_abs_seqno <= _next_seqno){
-        _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
         _ack_correct = true;
+        _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
         _receiver_window_size = (window_size == 0) + window_size;
-        if (_bytes_unacknowledged != 0){
-            _segments_out.push(_outstanding_segments.upper_bound(_next_seqno - _bytes_unacknowledged)->second);
-        }
-        else if (_stream.buffer_empty() && _stream.input_ended()){
-            _receiver_window_size = 0;
-        }
     }
     else{
         _ack_correct = false;
