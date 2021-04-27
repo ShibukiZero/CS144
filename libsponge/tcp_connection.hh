@@ -33,8 +33,9 @@ class TCPConnection {
     //! \brief send RST flag segment, and tear down TCP connection
     void _send_rst();
 
-    //! \brief set the window size as large as possible
-    size_t _set_window_size();
+    //! \brief get segments that need to be send form sender
+    //! avoid forgetting to pop segment from sender segment out queue.
+    void _send_segment_from_sender();
 
 
 
