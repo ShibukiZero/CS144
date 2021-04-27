@@ -36,24 +36,42 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     if (_receiver.ackno().has_value()){
         // generate an ack sequence number for sender to send.
         _ackno = _receiver.ackno();
-        // if received segment has acked something
+        // if received segment has acked something, it means something sender has
+        // sent have been received on the other side. else, this segment is a SYN
+        // segment and we need to send SYN back with ack.
+        // if received segment has ack, tell sender about the acknowledgement
+        // and window size of the other side. otherwise, send a SYN segment with ack.
         if (seg.header().ack){
             _sender.ack_received(seg.header().ackno, seg.header().win);
-            _sender.fill_window();
+        }
+        // generate new segment and send it.
+        // Note: if received segment has not ack, sender will generate a SYN segment.
+        _sender.fill_window();
+        // if new segment is generated, set flags right and send it,
+        // else, do nothing.
+        // Note: if sender needs to send an SYN, _sender.segments_out mustn't be empty.
+        if (!_sender.segments_out().empty()){
             TCPSegment send_seg = _sender.segments_out().front();
             _sender.segments_out().pop();
+            // set window size as large as possible
             if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
                 send_seg.header().win = _receiver.window_size();
             }
-            else{
+            else {
                 send_seg.header().win = std::numeric_limits<uint16_t>::max();
             }
+            // set ack flag and assign ackno to segment
             send_seg.header().ack = true;
             send_seg.header().ackno = _ackno.value();
+            // send the new generated segment
+            _segments_out.push(send_seg);
         }
+        // after sending segments out, if we have received all data from the other end,
+        // we don't need to linger.
         if (_receiver.stream_out().input_ended() && !_sender.stream_in().input_ended()){
             _linger_after_streams_finish = false;
         }
+        // restart the timer
         _timer = 0;
     }
     return;
@@ -71,7 +89,7 @@ size_t TCPConnection::write(const string &data) {
     _sender.stream_in().write(data);
     _sender.fill_window();
     // if new segment is generated, set flags right and send it,
-    // else, do nothin.
+    // else, do nothing.
     if (!_sender.segments_out().empty()){
         TCPSegment seg = _sender.segments_out().front();
         _sender.segments_out().pop();
@@ -119,6 +137,8 @@ void TCPConnection::end_input_stream() {
 
 void TCPConnection::connect() {
     // create a SYN segment with no ack flag and ackno, set window as large as possible.
+    // Note: when fill_window method is first called, it must generate a new seegment
+    // which is SYN, so _sender.segments_out can't be empty.
     // initialize a SYN segment
     _sender.fill_window();
     TCPSegment syn_seg = _sender.segments_out().front();
