@@ -26,6 +26,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
         _connected = false;
+        _linger_after_streams_finish = false;
         return;
     }
     if (seg.header().syn){
@@ -54,7 +55,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 }
 
 bool TCPConnection::active() const {
-    bool err = (_sender.stream_in().error() && _receiver.stream_out().error());
+    bool err = (_sender.stream_in().error() || _receiver.stream_out().error());
     bool ended = (_sender.stream_in().input_ended() && _sender.stream_in().buffer_empty()\
     && _receiver.stream_out().buffer_empty() && _receiver.stream_out().input_ended());
     return ((!err && !ended && _connected) || _linger_after_streams_finish);
@@ -86,7 +87,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         }
         bool stream_finished = _sender.stream_in().input_ended() && _sender.stream_in().buffer_empty();
         if (stream_finished && _linger_after_streams_finish){
-            _linger_after_streams_finish = (_timer >= 10 * _cfg.rt_timeout);
+            _linger_after_streams_finish = (_timer < 10 * _cfg.rt_timeout);
         }
     }
     return;
@@ -94,6 +95,8 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 
 void TCPConnection::end_input_stream() {
     _sender.stream_in().end_input();
+    _sender.fill_window();
+    _send_segment_from_sender();
 }
 
 void TCPConnection::connect() {
@@ -111,6 +114,7 @@ void TCPConnection::_send_rst() {
     _sender.stream_in().set_error();
     _receiver.stream_out().set_error();
     _connected = false;
+    _linger_after_streams_finish = false;
 }
 
 void TCPConnection::_send_segment_from_sender() {
