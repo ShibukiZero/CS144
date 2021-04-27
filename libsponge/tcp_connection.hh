@@ -27,11 +27,16 @@ class TCPConnection {
     //! the ack sequence number that sender should send, if connection is not established, send none
     std::optional<WrappingInt32> _ackno{};
 
-    //! the flag indicating whether there is an error happens in TCP
-    bool _err{false};
-
     //! the flag indicating whether TCP connection is established
     bool _connected{false};
+
+    //! \brief send RST flag segment, and tear down TCP connection
+    void _send_rst();
+
+    //! \brief set the window size as large as possible
+    size_t _set_window_size();
+
+
 
   public:
     //! \name "Input" interface for the writer

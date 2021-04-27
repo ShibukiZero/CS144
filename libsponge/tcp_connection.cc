@@ -27,7 +27,6 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
         _connected = false;
-        _err = true;
         return;
     }
     // if receive an SYN segment, connection is established.
@@ -59,12 +58,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
             TCPSegment send_seg = _sender.segments_out().front();
             _sender.segments_out().pop();
             // set window size as large as possible
-            if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
-                send_seg.header().win = _receiver.window_size();
-            }
-            else {
-                send_seg.header().win = std::numeric_limits<uint16_t>::max();
-            }
+            send_seg.header().win = _set_window_size();
             // set ack flag and assign ackno to segment
             send_seg.header().ack = true;
             send_seg.header().ackno = _ackno.value();
@@ -83,9 +77,10 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 }
 
 bool TCPConnection::active() const {
+    bool err = (_sender.stream_in().error() && _receiver.stream_out().error());
     bool ended = (_sender.stream_in().input_ended() && _sender.stream_in().buffer_empty()\
     && _receiver.stream_out().buffer_empty() && _receiver.stream_out().input_ended());
-    return ((!_err && !ended && _connected) || _linger_after_streams_finish);
+    return ((!err && !ended && _connected) || _linger_after_streams_finish);
 }
 
 size_t TCPConnection::write(const string &data) {
@@ -106,12 +101,7 @@ size_t TCPConnection::write(const string &data) {
             seg.header().ackno = _ackno.value();
         }
         // set window size as large as possible.
-        if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
-            seg.header().win = _receiver.window_size();
-        }
-        else {
-            seg.header().win = std::numeric_limits<uint16_t>::max();
-        }
+        seg.header().win = _set_window_size();
         // send out the segment
         _segments_out.push(seg);
     }
@@ -128,13 +118,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         // if number of consecutive retransmissions is larger than what we can tolerate,
         // abort the connection, otherwise, tick normally.
         if (_sender.consecutive_retransmissions() >= TCPConfig::MAX_RETX_ATTEMPTS){
-            _sender.send_empty_segment();
-            TCPSegment rst_seg = _sender.segments_out().front();
-            _sender.segments_out().pop();
-            rst_seg.header().rst = true;
-            _sender.stream_in().set_error();
-            _receiver.stream_out().set_error();
-            _err = true;
+            _send_rst();
             return;
         }
         else {
@@ -169,15 +153,30 @@ void TCPConnection::connect() {
     TCPSegment syn_seg = _sender.segments_out().front();
     _sender.segments_out().pop();
     // set window size as large as possible
-    if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
-        syn_seg.header().win = _receiver.window_size();
-    }
-    else{
-        syn_seg.header().win = std::numeric_limits<uint16_t>::max();
-    }
+    syn_seg.header().win = _set_window_size();
     // send segment out
     _segments_out.push(syn_seg);
 
+}
+
+void TCPConnection::_send_rst() {
+    _sender.send_empty_segment();
+    TCPSegment rst_seg = _sender.segments_out().front();
+    _sender.segments_out().pop();
+    rst_seg.header().rst = true;
+    _segments_out.push(rst_seg);
+    _sender.stream_in().set_error();
+    _receiver.stream_out().set_error();
+    _connected = false;
+}
+
+size_t TCPConnection::_set_window_size() {
+    if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
+        return _receiver.window_size();
+    }
+    else {
+        return std::numeric_limits<uint16_t>::max();
+    }
 }
 
 TCPConnection::~TCPConnection() {
@@ -186,11 +185,7 @@ TCPConnection::~TCPConnection() {
             cerr << "Warning: Unclean shutdown of TCPConnection\n";
 
             // Your code here: need to send a RST segment to the peer
-            _sender.send_empty_segment();
-            TCPSegment rst_seg = _sender.segments_out().front();
-            _sender.segments_out().pop();
-            rst_seg.header().rst = true;
-            _segments_out.push(rst_seg);
+            _send_rst();
         }
     } catch (const exception &e) {
         std::cerr << "Exception destructing TCP FSM: " << e.what() << std::endl;
