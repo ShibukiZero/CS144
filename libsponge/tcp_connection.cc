@@ -22,7 +22,7 @@ size_t TCPConnection::time_since_last_segment_received() const { return _timer; 
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
     _receiver.segment_received(seg);
-    if (seg.header().rst == true){
+    if (seg.header().rst){
         _sender.stream_in().error();
         _receiver.stream_out().error();
         return;
@@ -38,6 +38,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 }
 
 bool TCPConnection::active() const {
+    bool err = _sender.stream_in().
     return (_sender.stream_in().input_ended() && _receiver.stream_out().input_ended());
 }
 
