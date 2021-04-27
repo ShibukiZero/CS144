@@ -38,6 +38,8 @@ void TCPSender::fill_window() {
     while (_bytes_unacknowledged <= _receiver_window_size) {
         // if there is any invalid ack happens, do nothing.
         if (!_ack_correct) {
+            // reset the ack correct flag to avoid crashes.
+            _ack_correct = true;
             return;
         }
         TCPSegment segment = TCPSegment();
