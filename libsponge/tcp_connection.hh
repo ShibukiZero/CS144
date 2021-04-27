@@ -30,6 +30,9 @@ class TCPConnection {
     //! the flag indicating whether there is an error happens in TCP
     bool _err{false};
 
+    //! the flag indicating whether TCP connection is established
+    bool _connected{false};
+
   public:
     //! \name "Input" interface for the writer
     //!@{

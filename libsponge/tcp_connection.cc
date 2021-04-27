@@ -26,8 +26,13 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     if (seg.header().rst){
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
+        _connected = false;
         _err = true;
         return;
+    }
+    // if receive an SYN segment, connection is established.
+    if (seg.header().syn){
+        _connected = true;
     }
     // if there is no error occurs in TCP connection, receiver will receive the segment and ack it.
     _receiver.segment_received(seg);
@@ -78,8 +83,9 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 }
 
 bool TCPConnection::active() const {
-    bool ended = (_sender.stream_in().input_ended() && _receiver.stream_out().input_ended());
-    return ((!_err && !ended) || _linger_after_streams_finish);
+    bool ended = (_sender.stream_in().input_ended() && _sender.stream_in().buffer_empty()\
+    && _receiver.stream_out().buffer_empty() && _receiver.stream_out().input_ended());
+    return ((!_err && !ended && _connected) || _linger_after_streams_finish);
 }
 
 size_t TCPConnection::write(const string &data) {
@@ -115,20 +121,39 @@ size_t TCPConnection::write(const string &data) {
 
 //! \param[in] ms_since_last_tick number of milliseconds since the last call to this method
 void TCPConnection::tick(const size_t ms_since_last_tick) {
-    _timer = _timer + ms_since_last_tick;
-    if (_sender.consecutive_retransmissions() < TCPConfig::MAX_RETX_ATTEMPTS){
-        _sender.tick(ms_since_last_tick);
+    // if connection is still alive, execute ticks
+    if (active()){
+        // update ms since last segment received
+        _timer = _timer + ms_since_last_tick;
+        // if number of consecutive retransmissions is larger than what we can tolerate,
+        // abort the connection, otherwise, tick normally.
+        if (_sender.consecutive_retransmissions() >= TCPConfig::MAX_RETX_ATTEMPTS){
+            _sender.send_empty_segment();
+            TCPSegment rst_seg = _sender.segments_out().front();
+            _sender.segments_out().pop();
+            rst_seg.header().rst = true;
+            _sender.stream_in().set_error();
+            _receiver.stream_out().set_error();
+            _err = true;
+            return;
+        }
+        else {
+            _sender.tick(ms_since_last_tick);
+            // if any retransmission needs to be sent, send it.
+            if (!_sender.segments_out().empty()){
+                TCPSegment resend_seg = _sender.segments_out().front();
+                _sender.segments_out().pop();
+                _segments_out.push(resend_seg);
+            }
+        }
+        // after normally tick, if all data has been transmitted and we still need to linger
+        // because the other end didn't finish yet, update linger.
+        bool stream_finished = _sender.stream_in().input_ended() && _sender.stream_in().buffer_empty();
+        if (stream_finished && _linger_after_streams_finish){
+            _linger_after_streams_finish = (_timer >= 10 * _cfg.rt_timeout);
+        }
     }
-    else{
-        _sender.send_empty_segment();
-        TCPSegment rst_seg = _sender.segments_out().front();
-        _sender.segments_out().pop();
-        rst_seg.header().rst = true;
-        _sender.stream_in().set_error();
-        _receiver.stream_out().set_error();
-        _err = true;
-    }
-
+    return;
 }
 
 void TCPConnection::end_input_stream() {
