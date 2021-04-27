@@ -64,7 +64,7 @@ void TCPSender::fill_window() {
         segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent && _connected &&
                                segment.length_in_sequence_space() < _receiver_window_size +
                                                                         (_receiver_window_size == 0) -
-                                                                        _bytes_unacknowledged - segment.header().syn;
+                                                                        _bytes_unacknowledged;
         if (segment.header().fin) {
             _fin_sent = true;
         }
