@@ -31,8 +31,12 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
     // if there is no error occurs in TCP connection, receiver will receive the segment and ack it.
     _receiver.segment_received(seg);
+    // usually, receiver will generate an ack, unless some segments come earlier than
+    // SYN segment. in that case, do nothing.
     if (_receiver.ackno().has_value()){
+        // generate an ack sequence number for sender to send.
         _ackno = _receiver.ackno();
+        // if received segment has acked something
         if (seg.header().ack){
             _sender.ack_received(seg.header().ackno, seg.header().win);
             _sender.fill_window();
@@ -50,8 +54,8 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         if (_receiver.stream_out().input_ended() && !_sender.stream_in().input_ended()){
             _linger_after_streams_finish = false;
         }
+        _timer = 0;
     }
-    _timer = 0;
     return;
 }
 
