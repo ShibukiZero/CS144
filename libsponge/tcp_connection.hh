@@ -24,6 +24,9 @@ class TCPConnection {
     //! timer to track milliseconds from last segment received
     size_t _timer{0};
 
+    //! the ack sequence number that sender should send, if connection is not established, send none
+    std::optional<WrappingInt32> _ackno{};
+
   public:
     //! \name "Input" interface for the writer
     //!@{
