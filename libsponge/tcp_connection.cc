@@ -22,16 +22,30 @@ size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_b
 size_t TCPConnection::time_since_last_segment_received() const { return _timer; }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
-    _receiver.segment_received(seg);
+    // handle rst flag, set both stream error and connection error.
     if (seg.header().rst){
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
+        _err = true;
         return;
     }
+    // if there is no error occurs in TCP connection, receiver will receive the segment and ack it.
+    _receiver.segment_received(seg);
     if (_receiver.ackno().has_value()){
         _ackno = _receiver.ackno();
         if (seg.header().ack){
             _sender.ack_received(seg.header().ackno, seg.header().win);
+            _sender.fill_window();
+            TCPSegment send_seg = _sender.segments_out().front();
+            _sender.segments_out().pop();
+            if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
+                send_seg.header().win = _receiver.window_size();
+            }
+            else{
+                send_seg.header().win = std::numeric_limits<uint16_t>::max();
+            }
+            send_seg.header().ack = true;
+            send_seg.header().ackno = _ackno.value();
         }
         if (_receiver.stream_out().input_ended() && !_sender.stream_in().input_ended()){
             _linger_after_streams_finish = false;
@@ -42,27 +56,38 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 }
 
 bool TCPConnection::active() const {
-    bool err = (_sender.stream_in().error() || _receiver.stream_out().error());
     bool ended = (_sender.stream_in().input_ended() && _receiver.stream_out().input_ended());
-    return ((!err && !ended) || _linger_after_streams_finish);
+    return ((!_err && !ended) || _linger_after_streams_finish);
 }
 
 size_t TCPConnection::write(const string &data) {
+    // record the previous number of bytes written into outbound stream
     size_t previous_written = _sender.stream_in().bytes_written();
+    // write data into outbound stream and generate a segment
     _sender.stream_in().write(data);
-    TCPSegment seg = _sender.segments_out().front();
-    _sender.segments_out().pop();
-    if (_ackno.has_value()){
-        seg.header().ack = true;
-        seg.header().ackno = _ackno.value();
+    _sender.fill_window();
+    // if new segment is generated, set flags right and send it,
+    // else, do nothin.
+    if (!_sender.segments_out().empty()){
+        TCPSegment seg = _sender.segments_out().front();
+        _sender.segments_out().pop();
+        // if TCP connection hasn't received an ack (usually for client part), set ack
+        // flag to false, else, set it to true and assign ackno to segment.
+        if (_ackno.has_value()){
+            seg.header().ack = true;
+            seg.header().ackno = _ackno.value();
+        }
+        // set window size as large as possible.
         if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
             seg.header().win = _receiver.window_size();
         }
-        else{
+        else {
             seg.header().win = std::numeric_limits<uint16_t>::max();
         }
+        // send out the segment
+        _segments_out.push(seg);
     }
-    _segments_out.push(seg);
+    // calculate how many bytes are written into outbound stream and return.
     return _sender.stream_in().bytes_written() - previous_written;
 }
 
@@ -79,6 +104,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         rst_seg.header().rst = true;
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
+        _err = true;
     }
 
 }
@@ -88,15 +114,19 @@ void TCPConnection::end_input_stream() {
 }
 
 void TCPConnection::connect() {
+    // create a SYN segment with no ack flag and ackno, set window as large as possible.
+    // initialize a SYN segment
     _sender.fill_window();
     TCPSegment syn_seg = _sender.segments_out().front();
     _sender.segments_out().pop();
+    // set window size as large as possible
     if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
         syn_seg.header().win = _receiver.window_size();
     }
     else{
         syn_seg.header().win = std::numeric_limits<uint16_t>::max();
     }
+    // send segment out
     _segments_out.push(syn_seg);
 
 }

@@ -27,6 +27,9 @@ class TCPConnection {
     //! the ack sequence number that sender should send, if connection is not established, send none
     std::optional<WrappingInt32> _ackno{};
 
+    //! the flag indicating whether there is an error happens in TCP
+    bool _err{false};
+
   public:
     //! \name "Input" interface for the writer
     //!@{
