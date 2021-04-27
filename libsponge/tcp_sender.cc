@@ -113,12 +113,6 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             size_t previous_bytes_unacknowledged = _bytes_unacknowledged;
             _bytes_unacknowledged = _next_seqno - ackno_abs_seqno;
             _receiver_window_size = window_size;
-            // if adding FIN flag will exceed window size, remove it.
-            if (!_outstanding_segments.empty() &&
-                _outstanding_segments[_next_seqno].length_in_sequence_space() > window_size) {
-                _outstanding_segments[_next_seqno].header().fin = false;
-                _fin_sent = false;
-            }
             // if new data is acknowledged, set retransmission timeout to initial value and set number of
             // consecutive retransmission to 0. if all outstanding segments are acked, stop the timer,
             // else, restart the timer.
