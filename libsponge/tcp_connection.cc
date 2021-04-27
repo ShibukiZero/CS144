@@ -34,6 +34,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
     _receiver.segment_received(seg);
     if (_receiver.ackno().has_value()){
+        bool _new_ack = !(_ackno == _receiver.ackno());
         _ackno = _receiver.ackno();
         if (seg.header().ack){
             _sender.ack_received(seg.header().ackno, seg.header().win);
@@ -42,7 +43,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         if (!_sender.segments_out().empty()){
             _send_segment_from_sender();
         }
-        else if (seg.length_in_sequence_space()){
+        else if (_new_ack || seg.length_in_sequence_space()){
             _sender.send_empty_segment();
             _send_segment_from_sender();
         }
@@ -57,7 +58,8 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 bool TCPConnection::active() const {
     bool err = (_sender.stream_in().error() || _receiver.stream_out().error());
     bool ended = (_sender.stream_in().input_ended() && _sender.stream_in().buffer_empty()\
-    && _receiver.stream_out().buffer_empty() && _receiver.stream_out().input_ended());
+    && _receiver.stream_out().buffer_empty() && _receiver.stream_out().input_ended()\
+    && !_sender.bytes_in_flight());
     return ((!err && !ended && _connected) || _linger_after_streams_finish);
 }
 
