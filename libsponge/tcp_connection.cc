@@ -22,7 +22,6 @@ size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_b
 size_t TCPConnection::time_since_last_segment_received() const { return _timer; }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
-    cout << "Received seg size: " << seg.length_in_sequence_space() << endl;
     if (seg.header().syn){
         _connected = true;
     }
@@ -43,10 +42,10 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
             }
             _sender.fill_window();
             if (!_sender.segments_out().empty()) {
-                _send_segment_from_sender();
+                _send_segment();
             } else if (_new_ack || seg.length_in_sequence_space()) {
                 _sender.send_empty_segment();
-                _send_segment_from_sender();
+                _send_segment();
             }
             if (_receiver.stream_out().input_ended() && !_sender.stream_in().input_ended()) {
                 _linger_after_streams_finish = false;
@@ -74,7 +73,7 @@ size_t TCPConnection::write(const string &data) {
         _sender.stream_in().write(data);
         _sender.fill_window();
         if (!_sender.segments_out().empty()){
-            _send_segment_from_sender();
+            _send_segment();
         }
     }
     else if (_sender.stream_in().error() || _receiver.stream_out().error()){
@@ -94,7 +93,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         else {
             _sender.tick(ms_since_last_tick);
             if (!_sender.segments_out().empty()){
-                _send_segment_from_sender();
+                _send_segment();
             }
         }
         bool stream_finished = _sender.stream_in().input_ended() && _sender.stream_in().buffer_empty();
@@ -112,7 +111,7 @@ void TCPConnection::end_input_stream() {
     if (active()){
         _sender.stream_in().end_input();
         _sender.fill_window();
-        _send_segment_from_sender();
+        _send_segment();
     }
     else if (_sender.stream_in().error() || _receiver.stream_out().error()){
         _send_rst();
@@ -123,7 +122,7 @@ void TCPConnection::end_input_stream() {
 void TCPConnection::connect() {
     if (!_connected && !_sender.stream_in().error() && !_receiver.stream_out().error()){
         _sender.fill_window();
-        _send_segment_from_sender();
+        _send_segment();
     }
     else if (_sender.stream_in().error() || _receiver.stream_out().error()){
         _send_rst();
@@ -143,21 +142,22 @@ void TCPConnection::_send_rst() {
     _linger_after_streams_finish = false;
 }
 
-void TCPConnection::_send_segment_from_sender() {
-    TCPSegment seg = _sender.segments_out().front();
-    _sender.segments_out().pop();
-    if (_ackno.has_value()){
-        seg.header().ack = true;
-        seg.header().ackno = _ackno.value();
+void TCPConnection::_send_segment() {
+    while (!_sender.segments_out().empty()){
+        TCPSegment seg = _sender.segments_out().front();
+        _sender.segments_out().pop();
+        if (_ackno.has_value()){
+            seg.header().ack = true;
+            seg.header().ackno = _ackno.value();
+        }
+        if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
+            seg.header().win = _receiver.window_size();
+        }
+        else {
+            seg.header().win =  std::numeric_limits<uint16_t>::max();
+        }
+        _segments_out.push(seg);
     }
-    if (_receiver.window_size() < std::numeric_limits<uint16_t>::max()){
-        seg.header().win = _receiver.window_size();
-    }
-    else {
-        seg.header().win =  std::numeric_limits<uint16_t>::max();
-    }
-    cout << "Send seg size: " << seg.length_in_sequence_space() << endl;
-    _segments_out.push(seg);
 }
 
 TCPConnection::~TCPConnection() {

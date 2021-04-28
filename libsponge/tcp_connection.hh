@@ -35,7 +35,7 @@ class TCPConnection {
 
     //! \brief get segments that need to be send form sender
     //! avoid forgetting to pop segment from sender segment out queue.
-    void _send_segment_from_sender();
+    void _send_segment();
 
 
 
