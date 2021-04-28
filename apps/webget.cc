@@ -1,4 +1,4 @@
-#include "socket.hh"
+#include "tcp_sponge_socket.hh"
 #include "util.hh"
 
 #include <cstdlib>
@@ -22,7 +22,7 @@ void get_URL(const string &host, const string &path) {
     const Address host_addr = Address(host, "http");
 
     // Construct a socket to communicate with TCP link.
-    TCPSocket socket = TCPSocket();
+    CS144TCPSocket socket = CS144TCPSocket();
 
     // Connect the socket with address of the hostname
     // to start a TCP link.
@@ -42,6 +42,7 @@ void get_URL(const string &host, const string &path) {
 
     // Close the connection
     socket.shutdown(SHUT_WR);
+    socket.wait_until_closed();
     socket.close();
 
     return;
