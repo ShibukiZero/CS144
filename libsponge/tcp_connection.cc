@@ -7,7 +7,7 @@
 
 // For Lab 4, please replace with a real implementation that passes the
 // automated checks run by `make check`.
-//
+
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
 
@@ -22,35 +22,39 @@ size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_b
 size_t TCPConnection::time_since_last_segment_received() const { return _timer; }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
-    if (seg.header().rst){
+    if (seg.header().syn){
+        _connected = true;
+    }
+    if (seg.header().rst && (_sender.next_seqno_absolute() || _connected)){
         _sender.stream_in().set_error();
         _receiver.stream_out().set_error();
         _connected = false;
         _linger_after_streams_finish = false;
         return;
     }
-    if (seg.header().syn){
-        _connected = true;
+    if (active()){
+        _receiver.segment_received(seg);
+        if (_receiver.ackno().has_value()) {
+            bool _new_ack = !(_ackno == _receiver.ackno());
+            _ackno = _receiver.ackno();
+            if (seg.header().ack) {
+                _sender.ack_received(seg.header().ackno, seg.header().win);
+            }
+            _sender.fill_window();
+            if (!_sender.segments_out().empty()) {
+                _send_segment_from_sender();
+            } else if (_new_ack || seg.length_in_sequence_space()) {
+                _sender.send_empty_segment();
+                _send_segment_from_sender();
+            }
+            if (_receiver.stream_out().input_ended() && !_sender.stream_in().input_ended()) {
+                _linger_after_streams_finish = false;
+            }
+            _timer = 0;
+        }
     }
-    _receiver.segment_received(seg);
-    if (_receiver.ackno().has_value()){
-        bool _new_ack = !(_ackno == _receiver.ackno());
-        _ackno = _receiver.ackno();
-        if (seg.header().ack){
-            _sender.ack_received(seg.header().ackno, seg.header().win);
-        }
-        _sender.fill_window();
-        if (!_sender.segments_out().empty()){
-            _send_segment_from_sender();
-        }
-        else if (_new_ack || seg.length_in_sequence_space()){
-            _sender.send_empty_segment();
-            _send_segment_from_sender();
-        }
-        if (_receiver.stream_out().input_ended() && !_sender.stream_in().input_ended()){
-            _linger_after_streams_finish = false;
-        }
-        _timer = 0;
+    else if (_sender.stream_in().error() || _receiver.stream_out().error()){
+        _send_rst();
     }
     return;
 }
@@ -65,10 +69,15 @@ bool TCPConnection::active() const {
 
 size_t TCPConnection::write(const string &data) {
     size_t previous_written = _sender.stream_in().bytes_written();
-    _sender.stream_in().write(data);
-    _sender.fill_window();
-    if (!_sender.segments_out().empty()){
-        _send_segment_from_sender();
+    if (active()){
+        _sender.stream_in().write(data);
+        _sender.fill_window();
+        if (!_sender.segments_out().empty()){
+            _send_segment_from_sender();
+        }
+    }
+    else if (_sender.stream_in().error() || _receiver.stream_out().error()){
+        _send_rst();
     }
     return _sender.stream_in().bytes_written() - previous_written;
 }
@@ -92,19 +101,33 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
             _linger_after_streams_finish = (_timer < 10 * _cfg.rt_timeout);
         }
     }
+    else if (_sender.stream_in().error() || _receiver.stream_out().error()){
+        _send_rst();
+    }
     return;
 }
 
 void TCPConnection::end_input_stream() {
-    _sender.stream_in().end_input();
-    _sender.fill_window();
-    _send_segment_from_sender();
+    if (active()){
+        _sender.stream_in().end_input();
+        _sender.fill_window();
+        _send_segment_from_sender();
+    }
+    else if (_sender.stream_in().error() || _receiver.stream_out().error()){
+        _send_rst();
+    }
+    return;
 }
 
 void TCPConnection::connect() {
-    _sender.fill_window();
-    _send_segment_from_sender();
-
+    if (!_connected && !_sender.stream_in().error() && !_receiver.stream_out().error()){
+        _sender.fill_window();
+        _send_segment_from_sender();
+    }
+    else if (_sender.stream_in().error() || _receiver.stream_out().error()){
+        _send_rst();
+    }
+    return;
 }
 
 void TCPConnection::_send_rst() {
