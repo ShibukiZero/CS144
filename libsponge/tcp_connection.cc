@@ -22,6 +22,7 @@ size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_b
 size_t TCPConnection::time_since_last_segment_received() const { return _timer; }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
+    cout << "Received seg size: " << seg.length_in_sequence_space() << endl;
     if (seg.header().syn){
         _connected = true;
     }
@@ -155,6 +156,7 @@ void TCPConnection::_send_segment_from_sender() {
     else {
         seg.header().win =  std::numeric_limits<uint16_t>::max();
     }
+    cout << "Send seg size: " << seg.length_in_sequence_space() << endl;
     _segments_out.push(seg);
 }
 
