@@ -47,6 +47,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
     else if (start_index == _tracker) {
         // write data into byte stream
         _output.write(data.substr(start_index - index, end_index - start_index));
+        //! \note perhaps bug happens here
         // update the tracker
         _tracker = end_index;
         // for any data that have already written, delete them in buffer.
@@ -61,6 +62,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
             else{
                 Substring substring = _unassembled.front().value();
                 _output.write(substring.data_string.substr(_tracker - substring.start_index));
+                //! \note perhaps bug happens here
                 _tracker = _output.bytes_written();
                 _unassembled.pop();
                 break;
