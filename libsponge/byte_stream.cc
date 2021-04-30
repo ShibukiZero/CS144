@@ -9,7 +9,7 @@
 
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
-//
+
 using namespace std;
 
 ByteStream::ByteStream(const size_t capacity) : _capacity(capacity), _buffer(""), _bytes_written(0), _bytes_read(0) {}
