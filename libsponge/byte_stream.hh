@@ -11,11 +11,13 @@
 class ByteStream {
   private:
     // Your code here -- add private members as necessary.
+
     size_t _capacity;       //!< Maximum buffer length.
     std::string _buffer;    //!< String that stores "capacity" bytes of the stream in memory.
     bool _end{};            //!< Flag indicating that the input has ended.
     size_t _bytes_written;  //!< A number that keep track of bytes that have been written.
     size_t _bytes_read;     //!< A number that keep track of bytes that have been read.
+
     // Hint: This doesn't need to be a sophisticated data structure at
     // all, but if any of your tests are taking longer than a second,
     // that's a sign that you probably want to keep exploring
