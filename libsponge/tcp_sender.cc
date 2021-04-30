@@ -77,7 +77,7 @@ void TCPSender::fill_window() {
         // update number of bytes unacknowledged, next sequence number, store the segment and push segment into queue.
         _bytes_unacknowledged = _bytes_unacknowledged + segment.length_in_sequence_space();
         _next_seqno = _next_seqno + segment.length_in_sequence_space();
-        _outstanding_segments[_next_seqno] = segment;
+        _outstanding_segments.insert(pair<uint64_t, TCPSegment>(_next_seqno, segment));
         _segments_out.push(segment);
         // start timer if it's not running.
         if (!_timer.timing()) {

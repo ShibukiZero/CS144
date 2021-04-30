@@ -2,6 +2,7 @@
 #define SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
 
 #include "byte_stream.hh"
+#include "reassembler_buffer.hh"
 
 #include <cstdint>
 #include <map>
@@ -19,7 +20,7 @@ class StreamReassembler {
     uint64_t _tracker;                               //!< The flag that tracks the index of the first
                                                      //!< substring to be pushed but not yet received
     uint64_t _eof_index;                             //!< The flab that records the last index of the stream
-    std::map<uint64_t, std::string> _unassembled{};  //!< The substrings to be assembled
+    ReassemblerBuffer _unassembled{};                //!< The substrings to be assembled
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.

@@ -2,38 +2,41 @@
 
 Substring::Substring(const size_t index, const string &data)
     : start_index(index)
-    , data(data) {
-    end_index = start_index + data.length();
-}
+    , end_index(index + data.length())
+    , data_string(data){}
 
-bool Substring::operator<(const Substring &A, const Substring &B) {
+bool operator<(const Substring &A, const Substring &B) {
     return A.start_index < B.start_index;
 }
 
-bool Substring::operator==(const Substring &A, const Substring &B) {
+bool operator==(const Substring &A, const Substring &B) {
     return A.start_index == B.start_index;
 }
 
-optional<Substring> Substring::operator+(const Substring &A, const Substring &B) {
-    if (B.start_index > A.end_index || A.start_index > B.end_index){
-        return;
-    }else{
+optional<Substring> operator+(const Substring &A, const Substring &B) {
+    if (B.start_index > A.end_index || A.start_index > B.end_index ) {
+        return {};
+    } else {
         string new_substring;
-        if (A.start_index <= B.start_index && B.start_index <= A.end_index){
+        size_t new_index;
+        if (A.start_index <= B.start_index) {
+            new_index = A.start_index;
             if (B.end_index > A.end_index){
-                new_substring = A.data + B.data.substr(B.end_index - A.end_index, :);
-                return Substring(A.start_index, new_substring);
-            }else{
-                return A;
+                new_substring = A.data_string + B.data_string.substr(A.end_index - B.start_index);
             }
-        }else if (B.start_index <= A.start_index && A.start_index <= B.end_index){
-            if (A.end_index > B.start_index){
-                new_substring = B.data + A.data.substr(A.end_index);
-                return Substring(B.start_index, new_substring);
-            }else{
-                return B;
+            else{
+                new_substring = A.data_string;
+            }
+        } else{
+            new_index = B.start_index;
+            if (A.end_index > B.end_index){
+                new_substring = B.data_string + A.data_string.substr(B.end_index - A.start_index);
+            }
+            else{
+                new_substring = B.data_string;
             }
         }
+        return Substring(new_index, new_substring);
     }
 }
 
@@ -43,25 +46,28 @@ bool ReassemblerBuffer::empty() {
 
 void ReassemblerBuffer::push(const Substring &data) {
     if (empty()){
-        _buffer[data.start_index] = data;
-    }else{
+        _buffer.insert(pair<size_t, Substring>(data.start_index, data));
+    }
+    else{
         Substring new_substring = data;
         for (auto ite = _buffer.begin(); ite != _buffer.end();){
             if ((data + ite->second).has_value()){
                 new_substring = (new_substring + ite->second).value();
                 _buffer.erase(ite++);
-            }else{
+            }
+            else{
                 ite++;
             }
         }
-        _buffer[new_substring.start_index] = new_substring;
+        _buffer.insert(pair<size_t, Substring>(new_substring.start_index, new_substring));
     }
 }
 
 optional<Substring> ReassemblerBuffer::front() {
     if (empty()){
-        return;
-    }else{
+        return {};
+    }
+    else{
         Substring data = _buffer.begin()->second;
         return data;
     }
@@ -70,7 +76,8 @@ optional<Substring> ReassemblerBuffer::front() {
 void ReassemblerBuffer::pop() {
     if (empty()){
         return;
-    }else{
+    }
+    else{
         _buffer.erase(_buffer.begin());
     }
 }
