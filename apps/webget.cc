@@ -18,9 +18,10 @@ void get_URL(const string &host, const string &path) {
     // the "eof" (end of file).
 
     const Address host_addr = Address(host, "http");
+    // Using own implement of TCP connection.
     CS144TCPSocket socket = CS144TCPSocket();
     socket.connect(host_addr);
-    // The message that tells socket to get the content the url contains
+    // The message that tells socket to get the content the url contains.
     const std::string message =
         "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n";
     socket.write(message);
