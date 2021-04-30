@@ -23,7 +23,6 @@ void get_URL(const string &host, const string &path) {
     // The message that tells socket to get the content the url contains
     const std::string message =
         "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n";
-
     socket.write(message);
     while (!socket.eof()) {
         cout << socket.read();
@@ -31,7 +30,6 @@ void get_URL(const string &host, const string &path) {
     socket.shutdown(SHUT_WR);
     socket.wait_until_closed();
     socket.close();
-
     return;
 
     cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
