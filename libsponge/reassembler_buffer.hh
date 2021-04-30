@@ -35,6 +35,8 @@ inline bool operator==(const Substring &A, const Substring &B);
 class ReassemblerBuffer{
     //! The buffer for storing incoming substrings
     map<size_t, Substring> _buffer{};
+    //! The number of unassembled bytes in buffer
+    size_t _unassembled_bytes{0};
   public:
     //! \brief Default constructor of ReassemblerBuffer class.
     ReassemblerBuffer() = default;
@@ -47,7 +49,9 @@ class ReassemblerBuffer{
     //! \brief This method will delete the substring with smallest start index in buffer.
     void pop();
     //! \brief This method returns whether buffer is empty.
-    bool empty() { return _buffer.empty(); };
+    bool empty() const { return _buffer.empty(); };
+    //! \brief This method returns number of bytes unassembled in buffer.
+    size_t buffer_size() const { return _unassembled_bytes; };
 };
 
 #endif //SPONGE_REASSEMBLER_BUFFER_HH

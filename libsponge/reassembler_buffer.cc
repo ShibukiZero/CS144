@@ -46,6 +46,7 @@ optional<Substring> operator+(const Substring &A, const Substring &B) {
 
 void ReassemblerBuffer::push(const Substring &data) {
     if (empty()){
+        _unassembled_bytes += data.data_string.length();
         _buffer.insert(pair<size_t, Substring>(data.start_index, data));
     }
     else{
@@ -56,6 +57,7 @@ void ReassemblerBuffer::push(const Substring &data) {
                 // Concatenate adjacent substrings, store the result in new_substring
                 // and erase old substrings.
                 new_substring = (new_substring + ite->second).value();
+                _unassembled_bytes -= ite->second.data_string.length();
                 _buffer.erase(ite++);
             }
             else{
@@ -63,6 +65,7 @@ void ReassemblerBuffer::push(const Substring &data) {
             }
         }
         // After traversal is finished, push concatenated substring into buffer.
+        _unassembled_bytes += new_substring.data_string.length();
         _buffer.insert(pair<size_t, Substring>(new_substring.start_index, new_substring));
     }
 }
@@ -82,6 +85,7 @@ void ReassemblerBuffer::pop() {
         return;
     }
     else{
+        _unassembled_bytes -= _buffer.begin()->second.data_string.length();
         _buffer.erase(_buffer.begin());
     }
 }
