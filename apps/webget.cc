@@ -5,7 +5,7 @@
 #include <iostream>
 
 using namespace std;
-//
+
 void get_URL(const string &host, const string &path) {
     // Your code here.
 
@@ -17,30 +17,17 @@ void get_URL(const string &host, const string &path) {
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
 
-    // Receive the hostname and use service name "http" to
-    // construct a Address class.
     const Address host_addr = Address(host, "http");
-
-    // Construct a socket to communicate with TCP link.
     CS144TCPSocket socket = CS144TCPSocket();
-
-    // Connect the socket with address of the hostname
-    // to start a TCP link.
     socket.connect(host_addr);
-
     // The message that tells socket to get the content the url contains
     const std::string message =
         "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n";
 
-    // Send the message via socket
     socket.write(message);
-
-    // Receive the messages that server send back via socket
     while (!socket.eof()) {
         cout << socket.read();
     }
-
-    // Close the connection
     socket.shutdown(SHUT_WR);
     socket.wait_until_closed();
     socket.close();
