@@ -24,7 +24,7 @@ class RetransmissionTimer {
     //! Initialize a timer
     RetransmissionTimer(const uint16_t initial_retransmission_timeout);
 
-    //! \name "Input" interface for the writer
+    //! \name Accessor to TCP sender
     //!@{
 
     //! \brief Start the timer
