@@ -1,13 +1,13 @@
 #ifndef SPONGE_REASSEMBLER_BUFFER_HH
 #define SPONGE_REASSEMBLER_BUFFER_HH
-#include <string>
 #include <map>
+#include <string>
 
 using namespace std;
 
 //! \brief A class that contains information about index and substring itself. It is used as a member
 //! of ReassemblerBuffer class.
-struct Substring{
+struct Substring {
     //! The start index of substring
     size_t start_index;
     //! The end index of substring
@@ -37,14 +37,14 @@ inline bool operator<(const Substring &A, const Substring &B);
 inline bool operator==(const Substring &A, const Substring &B);
 //! @}
 
-
 //! The ReassemblerBuffer class receives a Substring and store them, if possible, it will also
 //! concatenate adjacent substring and update storage.
-class ReassemblerBuffer{
+class ReassemblerBuffer {
     //! The buffer for storing incoming substrings
     map<size_t, Substring> _buffer{};
     //! The number of unassembled bytes in buffer
     size_t _unassembled_bytes{0};
+
   public:
     //! \brief Default constructor of ReassemblerBuffer class.
     ReassemblerBuffer() = default;
@@ -68,4 +68,4 @@ class ReassemblerBuffer{
     size_t buffer_size() const { return _unassembled_bytes; };
 };
 
-#endif //SPONGE_REASSEMBLER_BUFFER_HH
+#endif  // SPONGE_REASSEMBLER_BUFFER_HH

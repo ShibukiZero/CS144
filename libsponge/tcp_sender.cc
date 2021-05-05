@@ -50,18 +50,16 @@ void TCPSender::fill_window() {
         // Note: If connection is not established or this is an SYN segment, TCP sender shouldn't
         // send any data in payload.
         // Note: payload size should not be larger than MAX_PAYLOAD_SIZE.
-        size_t payload_size =
-            (!segment.header().syn && _connected) *
-            min((_receiver_window_size == 0) + _receiver_window_size - _bytes_unacknowledged,
-                TCPConfig::MAX_PAYLOAD_SIZE);
+        size_t payload_size = (!segment.header().syn && _connected) *
+                              min((_receiver_window_size == 0) + _receiver_window_size - _bytes_unacknowledged,
+                                  TCPConfig::MAX_PAYLOAD_SIZE);
         segment.payload() = _stream.read(payload_size);
         segment.header().seqno = wrap(_next_seqno, _isn);
         // Note: FIN should not be sent when it will exceed receiver's window size.
         // Note: FIN flag should be set when FIN has never sent before and connection has not tore down yet.
         segment.header().fin = _stream.buffer_empty() && _stream.input_ended() && !_fin_sent && _connected &&
-                               segment.length_in_sequence_space() < _receiver_window_size +
-                                                                        (_receiver_window_size == 0) -
-                                                                        _bytes_unacknowledged;
+                               segment.length_in_sequence_space() <
+                                   _receiver_window_size + (_receiver_window_size == 0) - _bytes_unacknowledged;
         if (segment.header().fin) {
             _fin_sent = true;
         }

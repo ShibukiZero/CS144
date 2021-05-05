@@ -1,22 +1,16 @@
 #include "reassembler_buffer.hh"
 
 Substring::Substring(const size_t index, const string &data)
-    : start_index(index)
-    , end_index(index + data.length())
-    , data_string(data){}
+    : start_index(index), end_index(index + data.length()), data_string(data) {}
 
-bool operator<(const Substring &A, const Substring &B) {
-    return A.start_index < B.start_index;
-}
+bool operator<(const Substring &A, const Substring &B) { return A.start_index < B.start_index; }
 
-bool operator==(const Substring &A, const Substring &B) {
-    return A.start_index == B.start_index;
-}
+bool operator==(const Substring &A, const Substring &B) { return A.start_index == B.start_index; }
 
 optional<Substring> operator+(const Substring &A, const Substring &B) {
     // Check whether two substrings are adjacent.
     // Note: the byte which end_index is indicating is not contained in substring.
-    if (B.start_index > A.end_index || A.start_index > B.end_index ) {
+    if (B.start_index > A.end_index || A.start_index > B.end_index) {
         return {};
     } else {
         string new_substring;

@@ -1,4 +1,5 @@
 #include "stream_reassembler.hh"
+
 #include "reassembler_buffer.hh"
 
 // Dummy implementation of a stream reassembler.
@@ -46,7 +47,7 @@ void StreamReassembler::push_substring(const string &data, const uint64_t index,
         // If substring contains a continuous chunk of stream from tracker, write them into byte stream.
         _output.write(data.substr(start_index - index, end_index - start_index));
         _tracker = end_index;
-        while (_unassembled.front().has_value()){
+        while (_unassembled.front().has_value()) {
             if (_unassembled.front()->start_index > _tracker) {
                 // Bytes stored in buffer are not continuous.
                 break;

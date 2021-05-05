@@ -14,12 +14,12 @@ class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
 
-    ByteStream _output;                              //!< The reassembled in-order byte stream
-    size_t _capacity;                                //!< The maximum number of bytes
-    uint64_t _tracker;                               //!< The flag that tracks the index of the first
-                                                     //!< substring to be pushed but not yet received
-    uint64_t _eof_index;                             //!< The flab that records the last index of the stream
-    ReassemblerBuffer _unassembled{};                //!< The substrings to be assembled
+    ByteStream _output;                //!< The reassembled in-order byte stream
+    size_t _capacity;                  //!< The maximum number of bytes
+    uint64_t _tracker;                 //!< The flag that tracks the index of the first
+                                       //!< substring to be pushed but not yet received
+    uint64_t _eof_index;               //!< The flab that records the last index of the stream
+    ReassemblerBuffer _unassembled{};  //!< The substrings to be assembled
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.

@@ -37,9 +37,6 @@ class TCPConnection {
     //! avoid forgetting to pop segment from sender segment out queue.
     void _send_segment();
 
-
-
-
   public:
     //! \name "Input" interface for the writer
     //!@{
