@@ -1,5 +1,4 @@
 #include "reassembler_buffer.hh"
-#include <iostream>
 
 Substring::Substring(const size_t index, const string &data)
     : start_index(index)
@@ -26,12 +25,7 @@ optional<Substring> operator+(const Substring &A, const Substring &B) {
             new_index = A.start_index;
             if (B.end_index > A.end_index) {
                 // new_substring concatenates A and adjacent parts B.
-                if (A.end_index >= B.start_index){
-                    new_substring = A.data_string + B.data_string.substr(A.end_index - B.start_index);
-                } else {
-                    cerr << "Error position 3";
-                }
-//                new_substring = A.data_string + B.data_string.substr(A.end_index - B.start_index);
+                new_substring = A.data_string + B.data_string.substr(A.end_index - B.start_index);
             } else {
                 new_substring = A.data_string;
             }
@@ -39,12 +33,7 @@ optional<Substring> operator+(const Substring &A, const Substring &B) {
             new_index = B.start_index;
             if (A.end_index > B.end_index) {
                 // new_substring concatenates B and adjacent parts A.
-                if (B.end_index >= A.start_index){
-                    new_substring = B.data_string + A.data_string.substr(B.end_index - A.start_index);
-                } else {
-                    cerr << "Error position 3";
-                }
-//                new_substring = B.data_string + A.data_string.substr(B.end_index - A.start_index);
+                new_substring = B.data_string + A.data_string.substr(B.end_index - A.start_index);
             } else {
                 new_substring = B.data_string;
             }
