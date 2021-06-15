@@ -1,13 +1,13 @@
 Lab 4 Writeup
 =============
 
-My name: [your name here]
+My name: Lin Zihan
 
-My SUNet ID: [your sunetid here]
+My SUNet ID: 18308125
 
-This lab took me about [n] hours to do. I [did/did not] attend the lab session.
+This lab took me about 20 hours to do. I did not attend the lab session.
 
-I worked with or talked about this assignment with: [please list other sunetids]
+I worked with or talked about this assignment with: None
 
 Program Structure and Design of the TCPConnection:
 []
