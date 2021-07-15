@@ -51,6 +51,15 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
         frame_out.header().src = _ethernet_address;
         frame_out.header().dst = cashed_mac;
     } else {
+        _ipv4_queue.push_back(std::make_pair(dgram, next_hop_ip));
+        std::deque<std::pair<EthernetFrame, size_t>>::iterator ite_arpreq;
+        for (ite_arpreq = _arp_request.begin(); ite_arpreq != _arp_request.end(); ite_arpreq++) {
+            ARPMessage arp_outgoing;
+            if (arp_outgoing.parse(ite_arpreq->first.payload()) == ParseResult::NoError
+                && arp_outgoing.target_ip_address == next_hop_ip) {
+                return;
+            }
+        }
         ARPMessage arp_message;
         arp_message.opcode = ARPMessage::OPCODE_REQUEST;
         arp_message.sender_ethernet_address = _ethernet_address;
@@ -61,7 +70,7 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
         frame_out.header().type = EthernetHeader::TYPE_ARP;
         frame_out.header().src = _ethernet_address;
         frame_out.header().dst = ETHERNET_BROADCAST;
-        _arp_request.push(std::make_pair(frame_out, _current_timer));
+        _arp_request.push_back(std::make_pair(frame_out, _current_timer));
     }
     _frames_out.push(frame_out);
     return;
@@ -69,6 +78,9 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
 
 //! \param[in] frame the incoming Ethernet frame
 optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame) {
+    if (frame.header().dst != _ethernet_address && frame.header().dst != ETHERNET_BROADCAST) {
+        return {};
+    }
     if (frame.header().type == EthernetHeader::TYPE_IPv4) {
         InternetDatagram ipv4_datagram;
         if (ipv4_datagram.parse(frame.payload()) == ParseResult::NoError) {
@@ -89,7 +101,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
                     arp_reply.target_ethernet_address = arp_message.sender_ethernet_address;
                     arp_reply.target_ip_address = arp_message.sender_ip_address;
                     EthernetFrame frame_out;
-                    frame_out.payload() = arp_message.serialize();
+                    frame_out.payload() = arp_reply.serialize();
                     frame_out.header().type = EthernetHeader::TYPE_ARP;
                     frame_out.header().src = _ethernet_address;
                     frame_out.header().dst = arp_message.sender_ethernet_address;
@@ -113,7 +125,7 @@ void NetworkInterface::tick(const size_t ms_since_last_tick) {
     while(!_arp_table.empty()) {
         if (_current_timer - _arp_table_timer.front() > 30e3) {
             _arp_table.pop_front();
-            _arp_table_timer.pop();
+            _arp_table_timer.pop_front();
             continue;
         } else {
             break;
@@ -122,8 +134,8 @@ void NetworkInterface::tick(const size_t ms_since_last_tick) {
     while (!_arp_request.empty()) {
         if (_current_timer - _arp_request.front().second > 5e3) {
             _frames_out.push(_arp_request.front().first);
-            _arp_request.push(std::make_pair(_arp_request.front().first, _current_timer));
-            _arp_request.pop();
+            _arp_request.push_back(std::make_pair(_arp_request.front().first, _current_timer));
+            _arp_request.pop_front();
             continue;
         } else {
             break;
@@ -147,8 +159,17 @@ void NetworkInterface::arp_update(const EthernetAddress mac, const uint32_t ip) 
         }
     }
     if (!arp_cashed) {
-        _arp_table_timer.push(_current_timer);
+        _arp_table_timer.push_back(_current_timer);
         _arp_table.push_back(std::make_pair(mac, ip));
+    }
+    std::deque<std::pair<EthernetFrame, size_t>>::iterator ite_arpreq;
+    for (ite_arpreq = _arp_request.begin(); ite_arpreq != _arp_request.end(); ite_arpreq++) {
+        ARPMessage arp_outgoing;
+        if (arp_outgoing.parse(ite_arpreq->first.payload()) == ParseResult::NoError
+            && arp_outgoing.target_ip_address == ip) {
+            _arp_request.erase(ite_arpreq);
+            break;
+        }
     }
     if (!_ipv4_queue.empty()) {
         std::deque<std::pair<InternetDatagram, uint32_t>>::iterator ite_ipv4 = _ipv4_queue.begin();

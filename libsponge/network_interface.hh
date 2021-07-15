@@ -51,10 +51,10 @@ class NetworkInterface {
     size_t _current_timer{0};
 
     //! timer of arp table cash
-    std::queue<size_t> _arp_table_timer{};
+    std::deque<size_t> _arp_table_timer{};
 
     //! arp request buffer and timer
-    std::queue<std::pair<EthernetFrame, size_t>> _arp_request{};
+    std::deque<std::pair<EthernetFrame, size_t>> _arp_request{};
 
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
