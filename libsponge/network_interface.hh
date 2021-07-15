@@ -1,6 +1,7 @@
 #ifndef SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
 #define SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
 
+#include "arp_message.hh"
 #include "ethernet_frame.hh"
 #include "tcp_over_ip.hh"
 #include "tun.hh"
@@ -40,6 +41,21 @@ class NetworkInterface {
     //! outbound queue of Ethernet frames that the NetworkInterface wants sent
     std::queue<EthernetFrame> _frames_out{};
 
+    //! queue of Ethernet frames that should be sent after the ARP is replied.
+    std::deque<std::pair<InternetDatagram, uint32_t>> _ipv4_queue{};
+
+    //! arp look-up table
+    std::deque<std::pair<EthernetAddress , uint32_t>> _arp_table{};
+
+    //! timer of current time
+    size_t _current_timer{0};
+
+    //! timer of arp table cash
+    std::queue<size_t> _arp_table_timer{};
+
+    //! arp request buffer and timer
+    std::queue<std::pair<EthernetFrame, size_t>> _arp_request{};
+
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
     NetworkInterface(const EthernetAddress &ethernet_address, const Address &ip_address);
@@ -62,6 +78,9 @@ class NetworkInterface {
 
     //! \brief Called periodically when time elapses
     void tick(const size_t ms_since_last_tick);
+
+    //! \brief Update ARP table.
+    void arp_update(const EthernetAddress mac, const uint32_t ip);
 };
 
 #endif  // SPONGE_LIBSPONGE_NETWORK_INTERFACE_HH
