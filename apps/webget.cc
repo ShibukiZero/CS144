@@ -19,7 +19,7 @@ void get_URL(const string &host, const string &path) {
 
     const Address host_addr = Address(host, "http");
     // Using own implement of TCP connection.
-    CS144TCPSocket socket = CS144TCPSocket();
+    FullStackSocket socket = FullStackSocket();
     socket.connect(host_addr);
     // The message that tells socket to get the content the url contains.
     const std::string message =
