@@ -1,20 +1,20 @@
 Lab 5 Writeup
 =============
 
-My name: [your name here]
+My name: Lin Zihan
 
-My SUNet ID: [your sunetid here]
+My SUNet ID: 18308125
 
-This lab took me about [n] hours to do. I [did/did not] attend the lab session.
+This lab took me about 5 hours to do. I did not attend the lab session.
 
 Program Structure and Design of the NetworkInterface:
-[]
+I choose to use a deque to manage outgoing arp messages and arp tables. 
 
 Implementation Challenges:
-[]
+None
 
 Remaining Bugs:
-[]
+None
 
 - Optional: I had unexpected difficulty with: [describe]
 
