@@ -44,12 +44,10 @@ class AsyncNetworkInterface : public NetworkInterface {
 //! the router (in which case, the next hop address should be the datagram's final destination).
 struct RoutingRule {
     //! The "up-to-32-bit" IPv4 address prefix to match the datagram's destination address against
-    uint32_t route_prefix;
-    uint8_t prefix_length;
-    std::optional< Address > next_hop;
-    size_t interface_num;
-    RoutingRule(const uint32_t route_prefix, const uint8_t prefix_length,
-                const std::optional< Address > next_hop, const size_t interface_num);
+    uint32_t route_prefix{};
+    uint8_t prefix_length{};
+    std::optional< Address > next_hop{};
+    size_t interface_num{};
 };
 
 //! \brief A router that has multiple network interfaces and

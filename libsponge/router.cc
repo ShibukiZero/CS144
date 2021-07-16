@@ -18,11 +18,6 @@ using namespace std;
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
 
-RoutingRule::RoutingRule(const uint32_t route_prefix, const uint8_t prefix_length,
-                         const std::optional<Address> next_hop, const size_t interface_num):
-                         route_prefix(route_prefix), prefix_length(prefix_length),
-                         next_hop(next_hop), interface_num(interface_num) {}
-
 //! \param[in] route_prefix The "up-to-32-bit" IPv4 address prefix to match the datagram's destination address against
 //! \param[in] prefix_length For this route to be applicable, how many high-order (most-significant) bits of the route_prefix will need to match the corresponding bits of the datagram's destination address?
 //! \param[in] next_hop The IP address of the next hop. Will be empty if the network is directly attached to the router (in which case, the next hop address should be the datagram's final destination).
@@ -35,7 +30,11 @@ void Router::add_route(const uint32_t route_prefix,
          << " => " << (next_hop.has_value() ? next_hop->ip() : "(direct)") << " on interface " << interface_num << "\n";
 
     // Your code here.
-    RoutingRule new_route = RoutingRule(route_prefix, prefix_length, next_hop, interface_num);
+    RoutingRule new_route;
+    new_route.route_prefix = route_prefix;
+    new_route.prefix_length = prefix_length;
+    new_route.next_hop = next_hop;
+    new_route.interface_num = interface_num;
     _routing_table.push_back(new_route);
 }
 
@@ -47,12 +46,12 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
         return;
     }
     const uint32_t dst_ip = dgram.header().dst;
-    uint8_t max_match_length = 1;
+    uint8_t max_match_length = 0;
     optional<Address> matched_next_hop;
     size_t matched_interface_num;
     for (auto ite = _routing_table.begin(); ite != _routing_table.end(); ite++) {
         bool matched = (ite->route_prefix^dst_ip) >= (uint32_t(1) << ite->prefix_length);
-        if (matched && ite->prefix_length > max_match_length){
+        if (matched && ite->prefix_length >= max_match_length){
             max_match_length = ite->prefix_length;
             matched_next_hop = ite->next_hop;
             matched_interface_num = ite->interface_num;
@@ -61,6 +60,9 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
     if (matched_next_hop.has_value()) {
         AsyncNetworkInterface matched_interface = this->interface(matched_interface_num);
         matched_interface.send_datagram(dgram, matched_next_hop.value());
+    } else if (max_match_length != 0) {
+        AsyncNetworkInterface matched_interface = this->interface(matched_interface_num);
+        matched_interface.send_datagram(dgram, Address::from_ipv4_numeric(dst_ip));
     }
     return;
 }
