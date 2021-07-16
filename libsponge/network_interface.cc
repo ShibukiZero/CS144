@@ -57,8 +57,8 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
         _ipv4_queue.push_back(std::make_pair(dgram, next_hop_ip));
         for (auto ite_arpreq = _arp_request.begin(); ite_arpreq != _arp_request.end(); ite_arpreq++) {
             ARPMessage arp_outgoing;
-            if (arp_outgoing.parse(ite_arpreq->first.payload()) == ParseResult::NoError
-                && arp_outgoing.target_ip_address == next_hop_ip) {
+            if (arp_outgoing.parse(ite_arpreq->first.payload()) == ParseResult::NoError &&
+                arp_outgoing.target_ip_address == next_hop_ip) {
                 return;
             }
         }
@@ -129,7 +129,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
 void NetworkInterface::tick(const size_t ms_since_last_tick) {
     _current_timer = _current_timer + ms_since_last_tick;
     // Delete arp table if it's out of date.
-    while(!_arp_table.empty()) {
+    while (!_arp_table.empty()) {
         if (_current_timer - _arp_table_timer.front() > 30e3) {
             _arp_table.pop_front();
             _arp_table_timer.pop_front();
@@ -157,7 +157,7 @@ void NetworkInterface::arp_update(const EthernetAddress mac, const uint32_t ip) 
     // Traverse the arp table to check whether arp mapping is cashed, if not, queue it.
     bool arp_cashed = false;
     auto ite_arp = _arp_table.begin();
-    while(ite_arp != _arp_table.end()) {
+    while (ite_arp != _arp_table.end()) {
         if (ite_arp->first == mac && ite_arp->second == ip) {
             arp_cashed = true;
             break;
@@ -175,8 +175,8 @@ void NetworkInterface::arp_update(const EthernetAddress mac, const uint32_t ip) 
     // Update arp request buffer if outgoing arp request is replied.
     for (auto ite_arpreq = _arp_request.begin(); ite_arpreq != _arp_request.end(); ite_arpreq++) {
         ARPMessage arp_outgoing;
-        if (arp_outgoing.parse(ite_arpreq->first.payload()) == ParseResult::NoError
-            && arp_outgoing.target_ip_address == ip) {
+        if (arp_outgoing.parse(ite_arpreq->first.payload()) == ParseResult::NoError &&
+            arp_outgoing.target_ip_address == ip) {
             _arp_request.erase(ite_arpreq);
             break;
         }

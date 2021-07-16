@@ -45,7 +45,7 @@ class NetworkInterface {
     std::deque<std::pair<InternetDatagram, uint32_t>> _ipv4_queue{};
 
     //! arp look-up table
-    std::deque<std::pair<EthernetAddress , uint32_t>> _arp_table{};
+    std::deque<std::pair<EthernetAddress, uint32_t>> _arp_table{};
 
     //! timer of current time
     size_t _current_timer{0};
