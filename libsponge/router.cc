@@ -50,7 +50,10 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
     optional<Address> matched_next_hop;
     size_t matched_interface_num;
     for (auto ite = _routing_table.begin(); ite != _routing_table.end(); ite++) {
-        bool matched = (ite->route_prefix^dst_ip) >= (uint32_t(1) << ite->prefix_length);
+        uint32_t a = ~(ite->route_prefix^dst_ip);
+        uint32_t b = ~(uint32_t(-1) >> ite->prefix_length);
+        //bool matched = (ite->route_prefix^dst_ip) >= (uint32_t(1) << ite->prefix_length);
+        bool matched = (a >= b);
         if (matched && ite->prefix_length >= max_match_length){
             max_match_length = ite->prefix_length;
             matched_next_hop = ite->next_hop;
