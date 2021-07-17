@@ -62,7 +62,7 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
         matched_interface.send_datagram(dgram, matched_next_hop.value());
     } else if (max_match_length != 0) {
         AsyncNetworkInterface matched_interface = this->interface(matched_interface_num);
-        cerr << "interface " << matched_interface_num << " ";
+        cerr << "interface " << matched_interface_num << "\n";
         matched_interface.send_datagram(dgram, Address::from_ipv4_numeric(dst_ip));
     }
     return;
