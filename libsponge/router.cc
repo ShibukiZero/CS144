@@ -54,9 +54,9 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
         // Note: "match" means datagram's prefix should at least match route_prefix with
         // first prefix_length bits. By taking xor, the result is certainly smaller than
         // or equal to prefix with first prefix_length bits 0 and remaining all 1.
-        bool matched = (ite->route_prefix^dst_ip) <= (uint32_t(-1) >> ite->prefix_length);
+        bool matched = (ite->route_prefix ^ dst_ip) <= (uint32_t(-1) >> ite->prefix_length);
         // If new match is longer than previous one, update new match.
-        if (matched && ite->prefix_length >= max_match_length){
+        if (matched && ite->prefix_length >= max_match_length) {
             max_match_length = ite->prefix_length;
             matched_next_hop = ite->next_hop;
             matched_interface_num = ite->interface_num;
