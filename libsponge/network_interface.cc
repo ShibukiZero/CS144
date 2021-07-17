@@ -18,6 +18,9 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
+uint32_t NetworkInterface::ARPTABLE_TIMEOUT = 30e3;
+uint32_t NetworkInterface::ARPREQUEST_TIMEOUT = 5e3;
+
 //! \param[in] ethernet_address Ethernet (what ARP calls "hardware") address of the interface
 //! \param[in] ip_address IP (what ARP calls "protocol") address of the interface
 NetworkInterface::NetworkInterface(const EthernetAddress &ethernet_address, const Address &ip_address)
@@ -32,7 +35,6 @@ NetworkInterface::NetworkInterface(const EthernetAddress &ethernet_address, cons
 void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Address &next_hop) {
     // convert IP address of next hop to raw 32-bit representation (used in ARP header)
     const uint32_t next_hop_ip = next_hop.ipv4_numeric();
-    cerr << _ip_address.ip() << " send a frame: ";
 
     // Traverse the whole arp table to find whether there is a match.
     bool arp_cashed = false;
@@ -52,7 +54,6 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
         frame_out.header().type = EthernetHeader::TYPE_IPv4;
         frame_out.header().src = _ethernet_address;
         frame_out.header().dst = cashed_mac;
-        cerr << frame_out.header().to_string() << " " << dgram.header().summary() << "\n";
     } else {
         // Note: need to queue the ipv4 datagram if network interface don't know how to forward it, if
         // arp message is already sent, don't send it again to avoid broadcast flooding.
@@ -78,7 +79,6 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
         frame_out.header().src = _ethernet_address;
         frame_out.header().dst = ETHERNET_BROADCAST;
         _arp_request.push_back(std::make_pair(frame_out, _current_timer));
-        cerr << frame_out.header().to_string() << " " << arp_request.to_string() << "\n";
     }
     _frames_out.push(frame_out);
     return;
@@ -86,7 +86,6 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
 
 //! \param[in] frame the incoming Ethernet frame
 optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame) {
-    cerr << _ip_address.ip() << " received a frame: " << frame.header().to_string() << " ";
     // If frame is not for local host, ignore it.
     if (frame.header().dst != _ethernet_address && frame.header().dst != ETHERNET_BROADCAST) {
         return {};
@@ -95,7 +94,6 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
         // If the frame carries a ipv4 datagram and is successfully parsed, return it to its caller.
         InternetDatagram ipv4_datagram;
         if (ipv4_datagram.parse(frame.payload()) == ParseResult::NoError) {
-            cerr << ipv4_datagram.header().summary() << "\n";
             return ipv4_datagram;
         } else {
             cerr << "ipv4 datagram failed to parse!\n";
@@ -104,7 +102,6 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
         // If the frame carries an arp, learn from it. Generate proper reply to it if necessary.
         ARPMessage arp_message;
         if (arp_message.parse(frame.payload()) == ParseResult::NoError) {
-            cerr << arp_message.to_string() << "\n";
             arp_update(arp_message.sender_ethernet_address, arp_message.sender_ip_address);
             if (arp_message.opcode == ARPMessage::OPCODE_REQUEST) {
                 if (arp_message.target_ip_address == _ip_address.ipv4_numeric()) {
@@ -120,7 +117,6 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
                     frame_out.header().src = _ethernet_address;
                     frame_out.header().dst = arp_message.sender_ethernet_address;
                     _frames_out.push(frame_out);
-                    cerr << _ip_address.ip() << " send a frame: " << frame_out.header().to_string() << " " << arp_reply.to_string() << "\n";
                 }
             } else if (arp_message.opcode != ARPMessage::OPCODE_REPLY) {
                 cerr << "arp type unknown!\n";
@@ -137,7 +133,7 @@ void NetworkInterface::tick(const size_t ms_since_last_tick) {
     _current_timer = _current_timer + ms_since_last_tick;
     // Delete arp table if it's out of date.
     while (!_arp_table.empty()) {
-        if (_current_timer - _arp_table_timer.front() > 30e3) {
+        if (_current_timer - _arp_table_timer.front() > NetworkInterface::ARPTABLE_TIMEOUT) {
             _arp_table.pop_front();
             _arp_table_timer.pop_front();
             continue;
@@ -147,7 +143,7 @@ void NetworkInterface::tick(const size_t ms_since_last_tick) {
     }
     // Retransmit arp request if it times out.
     while (!_arp_request.empty()) {
-        if (_current_timer - _arp_request.front().second > 5e3) {
+        if (_current_timer - _arp_request.front().second > NetworkInterface::ARPREQUEST_TIMEOUT) {
             _frames_out.push(_arp_request.front().first);
             _arp_request.push_back(std::make_pair(_arp_request.front().first, _current_timer));
             _arp_request.pop_front();
@@ -200,7 +196,6 @@ void NetworkInterface::arp_update(const EthernetAddress mac, const uint32_t ip) 
                 frame_out.header().dst = mac;
                 _frames_out.push(frame_out);
                 _ipv4_queue.erase(ite_ipv4);
-                cerr << _ip_address.ip() << " send a frame: " << frame_out.header().to_string() << " " << ite_ipv4->first.header().summary() << "\n";
             } else {
                 ite_ipv4++;
             }

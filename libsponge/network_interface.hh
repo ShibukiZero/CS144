@@ -56,6 +56,12 @@ class NetworkInterface {
     //! arp request buffer and timer
     std::deque<std::pair<EthernetFrame, size_t>> _arp_request{};
 
+    //! arp table cash timeout
+    static uint32_t ARPTABLE_TIMEOUT;
+
+    //! arp request timeout
+    static uint32_t ARPREQUEST_TIMEOUT;
+
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
     NetworkInterface(const EthernetAddress &ethernet_address, const Address &ip_address);
