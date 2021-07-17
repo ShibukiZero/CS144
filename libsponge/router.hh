@@ -46,7 +46,7 @@ struct RoutingRule {
     //! The "up-to-32-bit" IPv4 address prefix to match the datagram's destination address against
     uint32_t route_prefix{};
     uint8_t prefix_length{};
-    std::optional< Address > next_hop{};
+    std::optional<Address> next_hop{};
     size_t interface_num{};
 };
 

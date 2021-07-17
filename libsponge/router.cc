@@ -41,21 +41,29 @@ void Router::add_route(const uint32_t route_prefix,
 //! \param[in] dgram The datagram to be routed
 void Router::route_one_datagram(InternetDatagram &dgram) {
     // Your code here.
+    // If ttl of datagram is already 0 or will be 0, drop it.
     if (dgram.header().ttl == 0 || (--dgram.header().ttl) == 0) {
         return;
     }
+    // Traverse all of the route table to find the longest match.
     const uint32_t dst_ip = dgram.header().dst;
     uint8_t max_match_length = 0;
     optional<Address> matched_next_hop;
     size_t matched_interface_num;
     for (auto ite = _routing_table.begin(); ite != _routing_table.end(); ite++) {
+        // Note: "match" means datagram's prefix should at least match route_prefix with
+        // first prefix_length bits. By taking xor, the result is certainly smaller than
+        // or equal to prefix with first prefix_length bits 0 and remaining all 1.
         bool matched = (ite->route_prefix^dst_ip) <= (uint32_t(-1) >> ite->prefix_length);
+        // If new match is longer than previous one, update new match.
         if (matched && ite->prefix_length >= max_match_length){
             max_match_length = ite->prefix_length;
             matched_next_hop = ite->next_hop;
             matched_interface_num = ite->interface_num;
         }
     }
+    // Forward the datagram if there is a match. matched_next_hop might be empty, in that case,
+    // destination ip address should be the next hop.
     if (matched_next_hop.has_value()) {
         this->interface(matched_interface_num).send_datagram(dgram, matched_next_hop.value());
     } else if (max_match_length != 0) {
