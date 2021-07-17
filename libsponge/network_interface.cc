@@ -200,7 +200,7 @@ void NetworkInterface::arp_update(const EthernetAddress mac, const uint32_t ip) 
                 frame_out.header().dst = mac;
                 _frames_out.push(frame_out);
                 _ipv4_queue.erase(ite_ipv4);
-                cerr << _ip_address.ip() << " send a frame: " << frame_out.header().to_string() << " " << ite_ipv4->first.header().summary();
+                cerr << _ip_address.ip() << " send a frame: " << frame_out.header().to_string() << " " << ite_ipv4->first.header().summary() << "\n";
             } else {
                 ite_ipv4++;
             }

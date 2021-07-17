@@ -58,12 +58,10 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
         }
     }
     if (matched_next_hop.has_value()) {
-        AsyncNetworkInterface matched_interface = this->interface(matched_interface_num);
-        matched_interface.send_datagram(dgram, matched_next_hop.value());
+        this->interface(matched_interface_num).send_datagram(dgram, matched_next_hop.value());
     } else if (max_match_length != 0) {
-        AsyncNetworkInterface matched_interface = this->interface(matched_interface_num);
         cerr << "interface " << matched_interface_num << "\n";
-        matched_interface.send_datagram(dgram, Address::from_ipv4_numeric(dst_ip));
+        this->interface(matched_interface_num).send_datagram(dgram, Address::from_ipv4_numeric(dst_ip));
     }
     return;
 }
