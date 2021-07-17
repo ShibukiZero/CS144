@@ -115,7 +115,7 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
                     frame_out.header().dst = arp_message.sender_ethernet_address;
                     _frames_out.push(frame_out);
                 }
-            } else {
+            } else if (arp_message.opcode != ARPMessage::OPCODE_REPLY) {
                 cerr << "arp type unknown!\n";
             }
         } else {
