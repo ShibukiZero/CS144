@@ -41,8 +41,7 @@ void Router::add_route(const uint32_t route_prefix,
 //! \param[in] dgram The datagram to be routed
 void Router::route_one_datagram(InternetDatagram &dgram) {
     // Your code here.
-    dgram.header().ttl = dgram.header().ttl - 1;
-    if (dgram.header().ttl == 0) {
+    if (dgram.header().ttl == 0 || (--dgram.header().ttl) == 0) {
         return;
     }
     const uint32_t dst_ip = dgram.header().dst;
@@ -60,7 +59,6 @@ void Router::route_one_datagram(InternetDatagram &dgram) {
     if (matched_next_hop.has_value()) {
         this->interface(matched_interface_num).send_datagram(dgram, matched_next_hop.value());
     } else if (max_match_length != 0) {
-        cerr << "interface " << matched_interface_num << "\n";
         this->interface(matched_interface_num).send_datagram(dgram, Address::from_ipv4_numeric(dst_ip));
     }
     return;
