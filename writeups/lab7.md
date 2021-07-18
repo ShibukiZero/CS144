@@ -1,15 +1,15 @@
 Lab 7 Writeup
 =============
 
-My name: [your name here]
+My name: Lin Zihan
 
-My SUNet ID: [your sunetid here]
+My SUNet ID: 18308125
 
-My lab partner's SUNet ID: [your sunetid here]
+My lab partner's SUNet ID: None
 
-I also worked with or collaborated with: [their sunetids here]
+I also worked with or collaborated with: None
 
-This lab took me about [n] hours to do. I [did/did not] attend the lab session.
+This lab took me about 0.5 hours to do. I did not attend the lab session.
 
 Solo portion:
 []
