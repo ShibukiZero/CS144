@@ -2,7 +2,7 @@
 *.o
 /build
 /.idea
-/cmake-build-debug
+/cmake-build-debug-cs144_vm
 CMakeCache.txt
 CMakeFiles
 Makefile
