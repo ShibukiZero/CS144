@@ -2,6 +2,7 @@
 #define SPONGE_REASSEMBLER_BUFFER_HH
 #include <map>
 #include <string>
+#include <optional>
 
 using namespace std;
 
